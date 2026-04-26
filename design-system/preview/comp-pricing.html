@@ -1,0 +1,18 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><link rel="stylesheet" href="preview.css"><title>Pricing</title>
+<style>
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.p{padding:24px;background:#fff;border:1px solid #eadfce;border-radius:24px;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 6px rgba(48,38,22,.04)}
+.p.rec{border:2px solid #12352d;position:relative}
+.p.rec::after{content:'推荐';position:absolute;top:-10px;right:18px;background:#12352d;color:#fbfaf7;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px}
+.tier{font-size:12px;font-weight:800;color:#5d6964;letter-spacing:.06em;text-transform:uppercase}
+.price{font-family:'Noto Serif SC',serif;font-size:36px;font-weight:900;color:#10201b;letter-spacing:-.04em}
+.desc{font-size:13px;color:#5d6964;line-height:1.65}
+.btn{margin-top:8px;border:0;border-radius:14px;padding:12px;background:#12352d;color:#fbfaf7;font:inherit;font-weight:800;cursor:pointer;font-family:var(--ppath-font-sans)}
+.btn.ghost{background:#e7f0ea;color:#12352d}
+</style></head>
+<body><div class="card" style="background:#fbfaf7">
+<div class="grid">
+<div class="p"><div class="tier">月卡</div><div class="price">¥ 99 <span style="font-size:14px;color:#5d6964;font-weight:500">/ 月</span></div><div class="desc">每月 120 次拍题诊断 · 30 次深度讲解 · 每周学习报告</div><button class="btn ghost">开通月卡</button></div>
+<div class="p rec"><div class="tier">年卡</div><div class="price">¥ 792 <span style="font-size:14px;color:#5d6964;font-weight:500">/ 年</span></div><div class="desc">全年 1500 次诊断 · 400 次深度讲解 · 每周报告 · 优先使用新方法库</div><button class="btn">开通年卡</button></div>
+</div>
+</div></body></html>

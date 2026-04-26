@@ -1,0 +1,24 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><link rel="stylesheet" href="preview.css"><title>Method card</title>
+<style>
+.method{padding:18px 20px;background:#fff;border:1px solid #eadfce;border-radius:20px;display:flex;flex-direction:column;gap:8px;box-shadow:0 2px 6px rgba(48,38,22,.04)}
+.method.active{border-color:#12352d;box-shadow:0 8px 28px rgba(48,38,22,.06)}
+.head{display:flex;justify-content:space-between;align-items:center}
+.title{font-weight:800;font-size:18px;color:#10201b}
+.pill{font-size:11px;font-weight:800;padding:4px 10px;border-radius:999px}
+.approved{background:#d8eedf;color:#16613f}
+.review{background:#fef3c7;color:#92400e}
+.move{font-size:13px;color:#5d6964;line-height:1.65}
+.steps{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.steps span{font-size:11px;font-weight:700;background:#e7f0ea;color:#12352d;padding:4px 9px;border-radius:999px}
+</style></head>
+<body><div class="card" style="background:#fbfaf7;gap:10px">
+<div class="method active">
+  <div class="head"><div class="title">动量守恒</div><div class="pill approved">已发布</div></div>
+  <div class="move">先圈系统，再判断外力冲量是否可忽略，规定正方向后列碰前碰后总动量。</div>
+  <div class="steps"><span>1 · 圈定系统</span><span>2 · 判断外力冲量</span><span>3 · 规定正方向</span><span>4 · 列动量</span></div>
+</div>
+<div class="method">
+  <div class="head"><div class="title">机械能守恒</div><div class="pill review">待审核</div></div>
+  <div class="move">先判断是否只有重力或弹力做功，再选零势能面，列初末状态能量。</div>
+</div>
+</div></body></html>

@@ -1,0 +1,53 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<link rel="stylesheet" href="preview.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Inputs</title>
+<style>
+.field{display:flex;flex-direction:column;gap:8px}
+.label{
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  font-size:13px;
+  font-weight:700;
+  color:#0e2a23;
+  letter-spacing:-0.005em;
+  display:flex;align-items:center;gap:8px;
+}
+.label .req{color:#c2611f;font-weight:800}
+.label .hint{font-size:12px;font-weight:500;color:#8a958f;margin-left:auto}
+.input,.textarea{
+  width:100%;
+  border:1.5px solid #d8d2c4;
+  background:#ffffff;
+  border-radius:12px;
+  padding:14px 16px;
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  font-size:16px;
+  font-weight:500;
+  color:#10201b;
+  outline:0;
+  transition:border-color .14s, box-shadow .14s;
+  letter-spacing:-0.005em;
+}
+.input::placeholder,.textarea::placeholder{color:#a8a99e;font-weight:400}
+.input:focus,.textarea:focus{
+  border-color:#0e2a23;
+  box-shadow:0 0 0 4px rgba(14,42,35,.10);
+}
+.textarea{min-height:96px;resize:vertical;line-height:1.65}
+.foot{font-family:'Inter','Noto Sans SC',sans-serif;font-size:12px;color:#8a958f;margin-top:-2px}
+</style></head>
+<body><div class="card" style="background:#ffffff;padding:30px 32px;gap:20px">
+<label class="field">
+  <span class="label">知识点 <span class="req">*</span><span class="hint">用于路由到对应方法库</span></span>
+  <input class="input" value="动量守恒">
+</label>
+<label class="field">
+  <span class="label">这类题第一眼看 <span class="req">*</span></span>
+  <input class="input" value="碰撞、爆炸、反冲、系统、共同速度">
+  <span class="foot">关键词之间用顿号分隔</span>
+</label>
+<label class="field">
+  <span class="label">我通常先问学生</span>
+  <textarea class="textarea">先圈系统，再判断外力冲量是否可忽略，规定正方向后列总动量。</textarea>
+</label>
+</div></body></html>

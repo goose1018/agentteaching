@@ -1,0 +1,47 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<link rel="stylesheet" href="preview.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800&display=swap" rel="stylesheet">
+<title>Buttons</title>
+<style>
+.btn{
+  border:1px solid transparent;
+  cursor:pointer;
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  font-weight:700;
+  padding:12px 20px;
+  border-radius:12px;
+  font-size:14px;
+  letter-spacing:-0.01em;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  transition:transform .14s, box-shadow .14s, background .14s;
+}
+.btn:hover{transform:translateY(-1px)}
+.primary{background:#0e2a23;color:#ffffff}
+.primary:hover{background:#12352d}
+.ghost{background:#ffffff;color:#0e2a23;border:1px solid #d8d2c4}
+.ghost:hover{border-color:#0e2a23}
+.accent{background:#e36a1c;color:#ffffff;box-shadow:0 6px 18px rgba(227,106,28,.28)}
+.accent:hover{background:#c2611f}
+.tertiary{background:transparent;color:#0e2a23;padding:12px 8px;font-weight:600}
+.tertiary:hover{color:#c2611f}
+.pill{border-radius:999px}
+.disabled{opacity:.4;cursor:not-allowed}
+.disabled:hover{transform:none}
+.section-label{font-family:'Inter','Noto Sans SC',sans-serif;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#8a958f;margin-bottom:-4px}
+.note{font-family:'Inter','Noto Sans SC',sans-serif;font-size:13px;color:#5d6964;line-height:1.6}
+</style></head>
+<body><div class="card" style="background:#ffffff;padding:30px 32px;gap:14px">
+
+<div class="section-label">Primary surfaces</div>
+<div class="row"><button class="btn primary">拍题诊断</button><button class="btn ghost">输入题目</button><button class="btn tertiary">← 返回</button></div>
+
+<div class="section-label">Accent · 仅用于"下一步"</div>
+<div class="row"><button class="btn accent">下一步：免费试看</button><button class="btn accent pill">继续 →</button></div>
+
+<div class="section-label">Pill variants</div>
+<div class="row"><button class="btn primary pill">我是学生，开始学习</button><button class="btn ghost pill">我是老师</button><button class="btn primary disabled">不可点</button></div>
+
+<div class="note">主按钮 ink-green-900（更深更纯净）· 幽灵按钮白底深线 · 强调按钮 amber-600 仅用于推进流程的「下一步」· 一屏不超过 3 个按钮</div>
+</div></body></html>

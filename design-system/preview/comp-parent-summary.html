@@ -1,0 +1,92 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<link rel="stylesheet" href="preview.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<title>Parent summary</title>
+<style>
+.ps{
+  position:relative;
+  padding:28px 30px 26px;
+  background:#0e2a23;
+  color:#f5efe1;
+  border-radius:24px;
+  display:flex;flex-direction:column;gap:14px;
+  box-shadow:0 18px 55px rgba(14,42,35,.18);
+  overflow:hidden;
+}
+.ps::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(120% 80% at 100% 0%, rgba(227,106,28,.22), transparent 55%);
+  pointer-events:none;
+}
+.eyebrow{
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  font-size:11px;font-weight:800;letter-spacing:0.14em;text-transform:uppercase;
+  color:#e36a1c;
+  display:flex;align-items:center;gap:8px;
+  position:relative;
+}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:#e36a1c;box-shadow:0 0 0 4px rgba(227,106,28,.18)}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;position:relative}
+.h{font-family:'Inter','Noto Sans SC',sans-serif;font-size:24px;font-weight:800;letter-spacing:-0.025em;color:#ffffff;line-height:1.2}
+.who{font-family:'Inter','Noto Sans SC',sans-serif;font-size:12px;font-weight:600;color:#a8c2b6;text-align:right;line-height:1.5}
+.who b{color:#fff;font-weight:700}
+.headline{
+  position:relative;
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  font-size:18px;line-height:1.55;font-weight:600;color:#f5efe1;
+  letter-spacing:-0.005em;
+  border-left:3px solid #e36a1c;
+  padding:2px 0 2px 14px;
+}
+.headline em{font-style:normal;color:#ffb072;font-weight:800}
+.kv{
+  position:relative;
+  display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:start;
+  padding:12px 0;border-top:1px solid rgba(245,239,225,.12);
+}
+.kv:first-of-type{border-top:1px solid rgba(245,239,225,.18)}
+.kv .k{font-family:'Inter','Noto Sans SC',sans-serif;font-size:12px;font-weight:700;letter-spacing:0.04em;color:#a8c2b6;text-transform:uppercase;padding-top:2px}
+.kv .v{font-family:'Inter','Noto Sans SC',sans-serif;font-size:14px;line-height:1.65;color:#f5efe1;font-weight:500}
+.kv .v b{color:#ffb072;font-weight:800}
+.foot{
+  position:relative;
+  display:flex;gap:8px;flex-wrap:wrap;margin-top:4px;
+}
+.foot span{
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  font-size:11px;font-weight:600;
+  background:rgba(245,239,225,.10);
+  border:1px solid rgba(245,239,225,.18);
+  color:#dfd6c2;
+  padding:5px 10px;border-radius:999px;
+}
+.cta{
+  position:relative;
+  margin-top:8px;
+  display:flex;gap:8px;
+}
+.cta button{
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  font-weight:700;font-size:13px;
+  border:0;cursor:pointer;
+  padding:10px 16px;border-radius:10px;
+  display:inline-flex;align-items:center;gap:6px;
+}
+.cta .pri{background:#e36a1c;color:#fff;box-shadow:0 6px 18px rgba(227,106,28,.32)}
+.cta .ghost{background:rgba(245,239,225,.10);color:#f5efe1;border:1px solid rgba(245,239,225,.20)}
+</style>
+</head>
+<body><div class="card" style="background:#fbfaf7;padding:26px">
+<div class="ps">
+  <div class="eyebrow"><span class="dot"></span>本题家长摘要 · 待发送</div>
+  <div class="head">
+    <div class="h">小明 · 4 月 26 日 · 高中物理</div>
+    <div class="who">由 <b>刘老师方法库</b> 引导<br>用时 8 分钟 · 5 步走完</div>
+  </div>
+  <div class="headline">这道题主要卡在 <em>没有先选研究对象</em>。</div>
+  <div class="kv"><div class="k">影响范围</div><div class="v">牛顿第二定律 · 动量 · 能量综合题</div></div>
+  <div class="kv"><div class="k">下一步建议</div><div class="v">练 <b>3 道「研究对象选择」专项题</b>，重点训练第一步判断。</div></div>
+  <div class="foot"><span>识别置信度 92%</span><span>第 12 次诊断</span><span>本周 5 次对话</span></div>
+  <div class="cta"><button class="pri">发送给家长 →</button><button class="ghost">复制摘要</button></div>
+</div>
+</div></body></html>

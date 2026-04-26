@@ -1,0 +1,14 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><link rel="stylesheet" href="preview.css"><title>Semantic</title>
+<style>
+.pill{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:700}
+.dot{width:6px;height:6px;border-radius:50%}
+</style></head>
+<body><div class="card">
+<div class="row">
+<span class="pill" style="color:#16613f;background:#d8eedf"><span class="dot" style="background:#16613f"></span>已审核 approved</span>
+<span class="pill" style="color:#92400e;background:#fef3c7"><span class="dot" style="background:#92400e"></span>待审核 needs_review</span>
+<span class="pill" style="color:#5d6964;background:#f0e9dc"><span class="dot" style="background:#5d6964"></span>草稿 draft</span>
+<span class="pill" style="color:#9b2226;background:#f7d8d8"><span class="dot" style="background:#9b2226"></span>已禁用 disabled</span>
+</div>
+<div class="ppath-meta">这四个状态对应 domain.ts 的 CardStatus，全产品共用同一组配色</div>
+</div></body></html>

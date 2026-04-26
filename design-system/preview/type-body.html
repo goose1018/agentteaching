@@ -1,0 +1,33 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<link rel="stylesheet" href="preview.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>
+<title>Body & meta</title>
+<style>
+.row-t{display:flex;flex-direction:column;gap:4px}
+.eyeb{font-family:'Inter','Noto Sans SC',sans-serif;font-weight:700;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#5d6964}
+.body-lg{font-family:'Inter','Noto Sans SC',sans-serif;font-weight:400;font-size:17px;line-height:1.65;color:#10201b}
+.body{font-family:'Inter','Noto Sans SC',sans-serif;font-weight:400;font-size:15px;line-height:1.7;color:#10201b}
+.meta{font-family:'Inter','Noto Sans SC',sans-serif;font-weight:500;font-size:13px;line-height:1.5;color:#5d6964}
+.spec{font-family:'JetBrains Mono',monospace;font-size:11px;color:#8a958f;font-weight:500}
+.formula-block{background:#fbfaf7;border:1px solid #eadfce;border-radius:12px;padding:14px 18px;font-size:18px;color:#10201b}
+.formula-inline{background:#f0e9dc;padding:1px 6px;border-radius:6px;font-size:.95em}
+</style>
+</head>
+<body><div class="card" style="gap:18px;padding:30px 32px">
+  <div class="row-t"><div class="eyeb">Eyebrow · 学习驾驶舱</div><div class="spec">eyebrow · 11 · upper · ink-2</div></div>
+
+  <div class="row-t"><div class="body-lg">拍一道题，AI 老师会先识别题型，再按老师的方法一步步带你分析。</div><div class="spec">body-lg · 17 / 1.65 · ink-1</div></div>
+
+  <div class="row-t"><div class="body">先把研究对象选出来。系统的合外力沿水平方向为零时，水平方向动量守恒：<span class="formula-inline">$\vec{p}_1+\vec{p}_2 = \vec{p}_1'+\vec{p}_2'$</span>，再代入数值。</div><div class="spec">body · 15 / 1.7 · 行内 LaTeX 用 KaTeX 渲染</div></div>
+
+  <div class="formula-block">$$m_1 v_1 + m_2 v_2 = (m_1 + m_2)\,v'$$</div>
+  <div class="spec">block · KaTeX · 用于结论方程，居中显示</div>
+
+  <div class="formula-block">$$F_{\text{合}} = m a \qquad qvB = \dfrac{m v^{2}}{r} \qquad E_k = \tfrac{1}{2} m v^{2}$$</div>
+  <div class="spec">block · 多公式排列 · 用 \qquad 间隔</div>
+
+  <div class="row-t"><div class="meta">本周诊断 12 道题 · 高频卡点：研究对象选择</div><div class="spec">meta · 13 · ink-2</div></div>
+</div></body></html>

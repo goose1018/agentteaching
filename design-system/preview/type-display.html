@@ -1,0 +1,59 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<link rel="stylesheet" href="preview.css">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+<title>Display Type</title>
+<style>
+.wrap{
+  background:#0e2a23;
+  border-radius:24px;
+  padding:44px 40px 38px;
+  position:relative;
+  overflow:hidden;
+}
+.wrap::before{
+  content:"";position:absolute;inset:0;
+  background:
+    radial-gradient(60% 80% at 100% 0%, rgba(227,106,28,.18), transparent 60%),
+    radial-gradient(80% 100% at 0% 100%, rgba(255,176,114,.08), transparent 55%);
+  pointer-events:none;
+}
+.kicker{
+  position:relative;
+  font-family:'Inter','Noto Sans SC',sans-serif;
+  font-weight:700;font-size:11px;letter-spacing:0.16em;text-transform:uppercase;
+  color:#ffb072;margin-bottom:18px;
+  display:flex;align-items:center;gap:10px;
+}
+.kicker .bar{width:24px;height:2px;background:#e36a1c;border-radius:2px}
+.display-hero{
+  position:relative;
+  font-family:'Inter','Noto Sans SC',-apple-system,'PingFang SC',sans-serif;
+  font-weight:800;
+  font-size:54px;
+  line-height:1.05;
+  letter-spacing:-0.045em;
+  color:#f5efe1;
+}
+.display-hero em{
+  font-style:normal;
+  background:linear-gradient(180deg, #ffb072 0%, #e36a1c 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.display-tag{
+  position:relative;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  font-weight:500;
+  color:#a8c2b6;
+  letter-spacing:0.02em;
+  margin-top:22px;
+}
+</style>
+</head>
+<body><div class="card" style="gap:0;padding:0;background:transparent;border:0;box-shadow:none">
+<div class="wrap">
+  <div class="kicker"><span class="bar"></span>PhysicsPath · Hero</div>
+  <div class="display-hero">不是搜答案，<br>而是<em>训练你怎么想题</em>。</div>
+  <div class="display-tag">paper-cream on ink-green-900 · accent gradient amber-400 → amber-700</div>
+</div>
+</div></body></html>

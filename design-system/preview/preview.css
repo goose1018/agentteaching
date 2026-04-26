@@ -1,0 +1,35 @@
+/* Shared styles for design-system preview cards */
+@import url('../colors_and_type.css');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body {
+  background: var(--ppath-paper);
+  font-family: var(--ppath-font-sans);
+  color: var(--ppath-fg-1);
+  -webkit-font-smoothing: antialiased;
+}
+.card {
+  width: 700px;
+  padding: 24px 28px;
+  background: var(--ppath-card);
+  border: var(--ppath-border);
+  border-radius: var(--ppath-radius-xl);
+  box-shadow: var(--ppath-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.col { display: flex; flex-direction: column; gap: 8px; }
+.label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ppath-fg-3);
+}
+.token {
+  font-family: var(--ppath-font-mono);
+  font-size: 11px;
+  color: var(--ppath-fg-2);
+}

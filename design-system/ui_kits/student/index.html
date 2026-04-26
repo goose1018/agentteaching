@@ -1,0 +1,246 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8">
+<title>PhysicsPath · Student UI kit</title>
+<link rel="stylesheet" href="../../colors_and_type.css">
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ppath-font-sans);background:var(--ppath-paper);color:var(--ppath-fg-1);min-height:100vh}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{background:#f3efe6;border-right:1px solid var(--ppath-line);padding:18px;display:flex;flex-direction:column;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 4px 14px}
+.brand img{width:36px;height:36px}
+.brand strong{display:block;font-size:15px}
+.brand span{display:block;font-size:11px;color:var(--ppath-fg-2)}
+.new{border:1px solid var(--ppath-line);background:#fff;border-radius:14px;padding:11px 14px;text-align:left;font:inherit;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.new svg{width:16px;height:16px;stroke:var(--ppath-ink-green-800)}
+.sec-title{font-size:11px;color:var(--ppath-fg-3);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:8px 4px 2px}
+.session{padding:9px 12px;border-radius:10px;font-size:13px;color:var(--ppath-fg-2);cursor:pointer;background:transparent;border:0;text-align:left;font:inherit}
+.session.active{background:#e7f0ea;color:var(--ppath-fg-1);font-weight:700}
+.gear{margin-top:auto;border:1px solid var(--ppath-line);background:#fff;border-radius:12px;padding:10px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;gap:8px;justify-content:center}
+.gear svg{width:14px;height:14px;stroke:var(--ppath-fg-2)}
+.work{display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:22px 32px 16px;border-bottom:1px solid var(--ppath-line);background:rgba(251,250,247,.92);backdrop-filter:blur(18px);position:sticky;top:0;z-index:5}
+.eyebrow{font-size:12px;color:var(--ppath-ink-green-500);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px}
+.h1{font-size:24px;font-weight:800;letter-spacing:-.03em}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:6px 11px;border-radius:999px;font-size:12px;font-weight:700;background:#d8eedf;color:var(--ppath-success-700)}
+.scrn{flex:1;padding:36px 40px;overflow:auto;display:none}
+.scrn.on{display:block}
+.scrn h1{font-family:var(--ppath-font-display);font-size:44px;font-weight:900;letter-spacing:-.05em;line-height:1.05;max-width:760px;margin-bottom:24px}
+.dash{display:grid;grid-template-columns:1.2fr .9fr .9fr;gap:14px}
+.cd{background:#fff;border:1px solid var(--ppath-line);border-radius:24px;padding:22px;box-shadow:var(--ppath-shadow-sm);display:flex;flex-direction:column;gap:8px}
+.cd .e{font-size:12px;font-weight:700;color:var(--ppath-fg-3);letter-spacing:.06em;text-transform:uppercase}
+.cd h3{font-size:22px;font-weight:800;letter-spacing:-.03em}
+.cd p{font-size:13px;color:var(--ppath-fg-2);line-height:1.65;flex:1}
+.btn{border:0;border-radius:14px;padding:11px 16px;font:inherit;font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:7px;font-family:var(--ppath-font-sans)}
+.btn svg{width:14px;height:14px}
+.btn-pri{background:var(--ppath-ink-green-800);color:var(--ppath-fg-on-ink)}
+.btn-acc{background:var(--ppath-amber-600);color:#fff;box-shadow:var(--ppath-shadow-amber)}
+.btn-ghost{background:var(--ppath-ink-green-100);color:var(--ppath-ink-green-800)}
+.btn-tert{background:transparent;color:var(--ppath-ink-green-800);padding:11px 6px}
+.row-act{display:flex;gap:8px;flex-wrap:wrap}
+.subjects{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:24px}
+.subj{background:#fff;border:1px solid var(--ppath-line);border-radius:18px;padding:14px;cursor:pointer;text-align:left;font:inherit}
+.subj .ic{width:36px;height:36px;border-radius:10px;background:var(--ppath-ink-green-100);color:var(--ppath-ink-green-800);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:16px;font-family:var(--ppath-font-display);margin-bottom:8px}
+.subj b{display:block;font-size:14px;font-weight:800}
+.subj span{display:block;font-size:11px;color:var(--ppath-fg-3);margin-top:2px}
+.flow{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.flow-card{background:#fff;border:1px solid var(--ppath-line);border-radius:24px;padding:24px;box-shadow:var(--ppath-shadow-sm);display:flex;flex-direction:column;gap:14px}
+.flow-card p{font-size:14px;color:var(--ppath-fg-2);line-height:1.7}
+.confirm-meta{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.confirm-meta span{padding:11px 14px;border-radius:14px;background:var(--ppath-paper-deep);font-size:13px;font-weight:700}
+.input{width:100%;border:1px solid var(--ppath-line);background:#fff;border-radius:14px;padding:12px 14px;font:inherit;font-size:14px;outline:0;font-family:var(--ppath-font-sans)}
+.input:focus{border-color:var(--ppath-ink-green-800)}
+.diag{background:#fff;border:1px solid var(--ppath-line);border-radius:24px;padding:24px;box-shadow:var(--ppath-shadow-md);display:flex;flex-direction:column;gap:12px}
+.diag .e{font-size:12px;color:var(--ppath-amber-600);font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.diag h2{font-size:22px;font-weight:800}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag-am{font-size:12px;font-weight:700;background:var(--ppath-amber-50);color:var(--ppath-amber-700);padding:5px 10px;border-radius:999px}
+.stuck{display:flex;flex-direction:column;gap:6px;border-left:3px solid var(--ppath-amber-600);padding:2px 0 2px 12px}
+.stuck span{font-size:14px}
+.stuck span:before{content:'· ';color:var(--ppath-amber-600);font-weight:800}
+.coach{display:grid;grid-template-columns:1fr 280px;gap:18px;max-width:1100px;margin:0 auto}
+.step{background:#fff;border:1px solid var(--ppath-line);border-radius:24px;padding:26px;box-shadow:var(--ppath-shadow-md);display:flex;flex-direction:column;gap:14px}
+.step .e{font-size:12px;color:var(--ppath-amber-600);font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.step h2{font-family:var(--ppath-font-display);font-size:32px;font-weight:800;letter-spacing:-.04em}
+.step p{font-size:15px;color:var(--ppath-fg-2);line-height:1.65}
+.choices{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.choices button{border:1px solid var(--ppath-line);background:var(--ppath-amber-50);border-radius:14px;padding:12px;font:inherit;font-weight:800;font-size:13px;cursor:pointer;font-family:var(--ppath-font-sans)}
+.choices button:hover{border-color:var(--ppath-amber-600)}
+.guide-act{display:flex;flex-wrap:wrap;gap:8px}
+.guide-act button{border:0;background:var(--ppath-ink-green-100);color:var(--ppath-ink-green-800);padding:9px 13px;border-radius:999px;font:inherit;font-weight:800;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:var(--ppath-font-sans)}
+.guide-act svg{width:14px;height:14px}
+.path{background:#fff;border:1px solid var(--ppath-line);border-radius:24px;padding:18px;height:fit-content;position:sticky;top:104px;box-shadow:var(--ppath-shadow-sm)}
+.path strong{display:block;font-weight:800;font-size:14px;margin-bottom:8px}
+.path-step{padding:11px 12px;border-radius:12px;background:var(--ppath-paper-deep);color:var(--ppath-fg-2);font-size:13px;margin-top:6px;font-weight:600}
+.path-step.active{background:var(--ppath-ink-green-800);color:var(--ppath-fg-on-ink);font-weight:800}
+.path-step.done{color:var(--ppath-success-700);background:#d8eedf;font-weight:700}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:980px}
+.sm-card{background:#fff;border:1px solid var(--ppath-line);border-radius:24px;padding:22px;box-shadow:var(--ppath-shadow-sm);display:flex;flex-direction:column;gap:10px}
+.sm-card.parent{background:var(--ppath-paper-deep)}
+.sm-card .e{font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ppath-ink-green-500)}
+.sm-card h3{font-size:18px;font-weight:800}
+.sm-card p{font-size:14px;line-height:1.7}
+.sm-card b{color:var(--ppath-amber-700)}
+.pricing{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:780px}
+.pc{background:#fff;border:1px solid var(--ppath-line);border-radius:24px;padding:24px;box-shadow:var(--ppath-shadow-sm);display:flex;flex-direction:column;gap:8px;position:relative}
+.pc.rec{border:2px solid var(--ppath-ink-green-800)}
+.pc.rec::after{content:'推荐';position:absolute;top:-10px;right:18px;background:var(--ppath-ink-green-800);color:#fbfaf7;font-size:11px;font-weight:800;padding:3px 10px;border-radius:999px}
+.pc .tier{font-size:12px;font-weight:800;color:var(--ppath-fg-2);letter-spacing:.06em;text-transform:uppercase}
+.pc .price{font-family:var(--ppath-font-display);font-size:36px;font-weight:900;letter-spacing:-.04em}
+.pc .price span{font-family:var(--ppath-font-sans);font-size:14px;color:var(--ppath-fg-2);font-weight:500}
+.tlist{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;max-width:980px}
+.tcard{background:#fff;border:1px solid var(--ppath-line);border-radius:24px;padding:20px;display:flex;flex-direction:column;gap:10px;cursor:pointer;box-shadow:var(--ppath-shadow-sm)}
+.tcard:hover{transform:translateY(-2px);box-shadow:var(--ppath-shadow-md)}
+.tcard .head{display:flex;gap:12px;align-items:center}
+.tcard img{width:56px;height:56px;border-radius:50%;border:1px solid var(--ppath-line)}
+.tcard .name{font-size:18px;font-weight:800}
+.tcard .ttl{font-size:13px;color:var(--ppath-fg-2)}
+.tcard .fit{font-size:13px;color:var(--ppath-fg-1)}
+.tcard .price-pill{margin-top:6px;display:inline-flex;font-size:13px;font-weight:800;color:var(--ppath-amber-700);background:var(--ppath-amber-50);padding:5px 11px;border-radius:999px;width:fit-content}
+.nav-tabs{display:flex;gap:6px;margin-bottom:24px;border-bottom:1px solid var(--ppath-line)}
+.nav-tabs button{border:0;background:transparent;padding:10px 14px;font:inherit;font-weight:700;font-size:13px;color:var(--ppath-fg-2);cursor:pointer;border-bottom:2px solid transparent;font-family:var(--ppath-font-sans)}
+.nav-tabs button.on{color:var(--ppath-ink-green-800);border-bottom-color:var(--ppath-ink-green-800)}
+</style></head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand"><img src="../../assets/logo-mark.svg"><div><strong>PhysicsPath</strong><span>同学好</span></div></div>
+    <button class="new" onclick="show('home')"><i data-lucide="plus"></i>新建对话</button>
+    <div class="sec-title">历史会话</div>
+    <button class="session active">动量守恒判断</button>
+    <button class="session">受力分析 · 斜面拉力</button>
+    <button class="session">电磁感应 · 楞次定律</button>
+    <button class="gear"><i data-lucide="settings"></i>设置</button>
+  </aside>
+  <section class="work">
+    <header class="topbar">
+      <div><div class="eyebrow">学习驾驶舱</div><div class="h1" id="title">欢迎回来</div></div>
+      <span class="pill"><i data-lucide="check-circle-2" style="width:14px;height:14px"></i>已购买 · 刘老师</span>
+    </header>
+
+    <div class="nav-tabs" style="padding:0 40px;margin-top:8px;margin-bottom:0">
+      <button class="on" onclick="show('home',this)">首页</button>
+      <button onclick="show('teachers',this)">老师</button>
+      <button onclick="show('capture',this)">拍题</button>
+      <button onclick="show('confirm',this)">确认</button>
+      <button onclick="show('diagnosis',this)">诊断</button>
+      <button onclick="show('coach',this)">陪练</button>
+      <button onclick="show('summary',this)">总结</button>
+      <button onclick="show('pricing',this)">购买</button>
+    </div>
+
+    <div class="scrn on" id="scrn-home">
+      <h1>继续跟刘老师练物理</h1>
+      <div class="dash">
+        <div class="cd"><div class="e">主任务</div><h3>拍一道不会的题</h3><p>AI 老师会先识别学科和题型，再匹配合适的老师方法。</p><div class="row-act"><button class="btn btn-pri" onclick="show('capture')"><i data-lucide="camera"></i>拍题诊断</button><button class="btn btn-ghost" onclick="show('coach')"><i data-lucide="pencil"></i>输入题目</button></div></div>
+        <div class="cd"><div class="e">我的老师</div><h3>刘老师 · 解题路径</h3><p>本周诊断 12 道题，常见卡点：研究对象选择、合外力判断。</p><button class="btn btn-ghost" onclick="show('coach')">继续上次对话</button></div>
+        <div class="cd"><div class="e">最近学习摘要</div><h3>本周学习报告</h3><p>已诊断 12 道题，高频卡点：牛顿第二定律、动量守恒。建议练连接体问题 3 道。</p><button class="btn btn-ghost" onclick="show('summary')">查看本周报告</button></div>
+      </div>
+      <div class="subjects">
+        <button class="subj"><div class="ic">F</div><b>高中物理</b><span>已开通</span></button>
+        <button class="subj"><div class="ic">∑</div><b>高中数学</b><span>内测中</span></button>
+        <button class="subj"><div class="ic">H₂</div><b>高中化学</b><span>内测中</span></button>
+        <button class="subj"><div class="ic">DNA</div><b>高中生物</b><span>内测中</span></button>
+        <button class="subj"><div class="ic">文</div><b>高中语文</b><span>即将开放</span></button>
+      </div>
+    </div>
+
+    <div class="scrn" id="scrn-teachers">
+      <h1>选择你的解题教练</h1>
+      <div class="tlist">
+        <div class="tcard" onclick="show('capture')"><div class="head"><img src="../../assets/teacher-avatar-a.svg"><div><div class="name">刘振华</div><div class="ttl">高中物理 · 解题路径</div></div></div><div class="fit">听课能懂，但一做题就不知道从哪下手的学生</div><div class="price-pill">¥99/月 · ¥792/年</div></div>
+        <div class="tcard"><div class="head"><img src="../../assets/teacher-avatar-b.svg"><div><div class="name">陈书远</div><div class="ttl">高中物理 · 力学模型</div></div></div><div class="fit">基础还可以，但综合题经常丢步骤分的学生</div><div class="price-pill">¥109/月 · ¥872/年</div></div>
+      </div>
+    </div>
+
+    <div class="scrn" id="scrn-capture">
+      <h1>拍下你不会的题</h1>
+      <div class="flow">
+        <div class="flow-card"><p>建议只拍一道题，保证题干和图像完整。如果有图，请把图一起拍进去。</p>
+          <div class="row-act"><button class="btn btn-pri" onclick="show('confirm')"><i data-lucide="camera"></i>拍照</button><button class="btn btn-ghost" onclick="show('confirm')"><i data-lucide="image"></i>从相册选择</button></div>
+          <textarea class="input" placeholder="也可以手动输入题目" style="min-height:90px;resize:vertical"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrn" id="scrn-confirm">
+      <h1>我识别到的题目</h1>
+      <div class="flow">
+        <div class="flow-card">
+          <div class="confirm-meta"><span>学科：高中物理</span><span>题型：动量守恒 · 共同速度</span><span>难度：中等</span><span>识别置信度：92%</span></div>
+          <textarea class="input" style="min-height:120px;resize:vertical">光滑水平面上，小车 A 与小车 B 发生碰撞，碰后粘在一起运动。已知两车质量和碰前速度，求碰后共同速度。</textarea>
+          <p style="font-size:13px;color:var(--ppath-fg-2)">图像信息：两个物体连接，水平面运动，涉及碰撞前后速度。</p>
+          <div class="row-act"><button class="btn btn-pri" onclick="show('diagnosis')">识别正确，继续</button><button class="btn btn-ghost">有错误，我来修改</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrn" id="scrn-diagnosis">
+      <h1>这道题的常见卡点</h1>
+      <div class="flow">
+        <div class="diag">
+          <div class="e">诊断结果</div>
+          <h2>动量守恒 · 碰撞后共同速度</h2>
+          <div class="tags"><span class="tag-am">高中物理</span><span class="tag-am">难度 中等</span><span class="tag-am">识别置信度 92%</span></div>
+          <div style="font-size:13px;font-weight:800;color:var(--ppath-fg-2);margin-top:4px">这道题你可能会卡在</div>
+          <div class="stuck"><span>没有先选研究对象</span><span>把某个力直接当成合外力</span><span>不知道什么时候列动量守恒方程</span></div>
+        </div>
+        <div class="flow-card" style="background:var(--ppath-paper-deep)">
+          <div style="display:flex;gap:12px;align-items:center"><img src="../../assets/teacher-avatar-a.svg" style="width:48px;height:48px;border-radius:50%"><div><div style="font-weight:800;font-size:15px">推荐：刘振华</div><div style="font-size:12px;color:var(--ppath-fg-2)">解题路径 · 适合「不知从哪下手」的学生</div></div></div>
+          <div class="row-act"><button class="btn btn-acc" onclick="show('coach')"><i data-lucide="play"></i>免费试看刘老师讲这道题</button><button class="btn btn-tert" onclick="show('teachers')">查看更多老师</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scrn" id="scrn-coach">
+      <div class="coach">
+        <div class="step">
+          <div class="e">当前步骤 1 / 5 · 该你了</div>
+          <h2>圈定系统</h2>
+          <p>这道题先别急着套公式。你觉得这一步，研究系统应该选谁？</p>
+          <div class="choices"><button>物体 A</button><button>物体 B</button><button>整体系统</button><button>我不确定</button></div>
+          <div class="guide-act"><button><i data-lucide="lightbulb"></i>提示一下</button><button><i data-lucide="arrow-right"></i>继续下一步</button><button><i data-lucide="book-open"></i>看完整解析</button><button><i data-lucide="pencil"></i>我来试试</button></div>
+          <div style="margin-top:8px;font-size:12px;color:var(--ppath-fg-3)">完成所有步骤后会自动生成本题总结与家长摘要</div>
+        </div>
+        <aside class="path">
+          <strong>本题路径</strong>
+          <div class="path-step active">1 · 圈定系统</div>
+          <div class="path-step">2 · 判断外力冲量</div>
+          <div class="path-step">3 · 规定正方向</div>
+          <div class="path-step">4 · 列碰前后动量</div>
+          <div class="path-step">5 · 求共同速度</div>
+          <button class="btn btn-pri" style="margin-top:14px;width:100%;justify-content:center" onclick="show('summary')">完成并生成总结</button>
+        </aside>
+      </div>
+    </div>
+
+    <div class="scrn" id="scrn-summary">
+      <h1>本题你学会了什么</h1>
+      <div class="summary-grid">
+        <div class="sm-card"><div class="e">学生总结</div><h3>动量守恒</h3><p>关键路径：圈定系统 → 判断外力冲量 → 规定正方向 → 列碰前后动量。</p><p>刚才卡点：看到碰撞就直接守恒，没有判断系统和外力条件。</p><p>下一步建议：再练 2 道同类题。</p></div>
+        <div class="sm-card parent"><div class="e">给家长看的本题摘要</div><h3>4 月 26 日 · 高中物理</h3><p>孩子本题主要卡在：<b>没有先选研究对象</b>。</p><p>这类问题会影响：牛顿第二定律、动量、能量综合题。</p><p>建议：接下来练 <b>3 道「研究对象选择」专项题</b>。</p></div>
+      </div>
+      <div style="margin-top:24px"><button class="btn btn-pri" onclick="show('pricing')">继续使用刘老师</button></div>
+    </div>
+
+    <div class="scrn" id="scrn-pricing">
+      <h1>继续使用刘老师</h1>
+      <div class="pricing">
+        <div class="pc"><div class="tier">月卡</div><div class="price">¥ 99 <span>/ 月</span></div><p style="font-size:13px;color:var(--ppath-fg-2);line-height:1.65">每月 120 次拍题诊断，30 次深度讲解，每周学习报告。</p><button class="btn btn-ghost" style="margin-top:8px;justify-content:center">开通月卡</button></div>
+        <div class="pc rec"><div class="tier">年卡</div><div class="price">¥ 792 <span>/ 年</span></div><p style="font-size:13px;color:var(--ppath-fg-2);line-height:1.65">全年 1500 次诊断，400 次深度讲解，每周报告，优先使用新方法库。</p><button class="btn btn-pri" style="margin-top:8px;justify-content:center">开通年卡</button></div>
+      </div>
+    </div>
+  </section>
+</div>
+<script>
+const titles={home:'欢迎回来',teachers:'选择你的解题教练',capture:'拍题诊断',confirm:'题干确认',diagnosis:'诊断预览',coach:'刘老师陪练中',summary:'学习总结',pricing:'开通老师陪练'};
+function show(name,btn){
+  document.querySelectorAll('.scrn').forEach(s=>s.classList.remove('on'));
+  document.getElementById('scrn-'+name).classList.add('on');
+  document.getElementById('title').textContent=titles[name];
+  if(btn){document.querySelectorAll('.nav-tabs button').forEach(b=>b.classList.remove('on'));btn.classList.add('on');}
+  else{document.querySelectorAll('.nav-tabs button').forEach((b,i)=>{b.classList.toggle('on',Object.keys(titles)[i]===name)});}
+}
+lucide.createIcons();
+</script>
+</body></html>

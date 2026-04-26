@@ -1,0 +1,20 @@
+<!doctype html><html lang="zh"><head><meta charset="utf-8"><link rel="stylesheet" href="preview.css"><title>Spacing</title>
+<style>
+.bar{height:14px;background:#12352d;border-radius:4px}
+.tok{display:grid;grid-template-columns:80px 1fr 80px;align-items:center;gap:12px}
+.tok span:first-child{font-family:var(--ppath-font-mono);font-size:11px;color:#5d6964}
+.tok span:last-child{font-family:var(--ppath-font-mono);font-size:11px;color:#5d6964;text-align:right}
+</style></head>
+<body><div class="card">
+<div class="col" style="gap:8px">
+<div class="tok"><span>--space-1</span><div class="bar" style="width:4px"></div><span>4 px</span></div>
+<div class="tok"><span>--space-2</span><div class="bar" style="width:8px"></div><span>8 px</span></div>
+<div class="tok"><span>--space-3</span><div class="bar" style="width:12px"></div><span>12 px</span></div>
+<div class="tok"><span>--space-4</span><div class="bar" style="width:16px"></div><span>16 px</span></div>
+<div class="tok"><span>--space-5</span><div class="bar" style="width:20px"></div><span>20 px</span></div>
+<div class="tok"><span>--space-6</span><div class="bar" style="width:24px"></div><span>24 px · card</span></div>
+<div class="tok"><span>--space-8</span><div class="bar" style="width:32px"></div><span>32 px</span></div>
+<div class="tok"><span>--space-12</span><div class="bar" style="width:48px"></div><span>48 px · sect</span></div>
+<div class="tok"><span>--space-16</span><div class="bar" style="width:64px"></div><span>64 px</span></div>
+</div>
+</div></body></html>

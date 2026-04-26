@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 360" fill="none">
+  
+  <rect width="480" height="360" rx="28" fill="#fffaf1"></rect>
+  
+  <path d="M70 290 L 70 240 L 150 240 L 150 180 L 240 180 L 240 120 L 360 120" stroke="#12352d" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"></path>
+  
+  <circle cx="70" cy="290" r="6" fill="#12352d"></circle>
+  <circle cx="150" cy="240" r="6" fill="#12352d"></circle>
+  <circle cx="240" cy="180" r="6" fill="#12352d"></circle>
+  <circle cx="360" cy="120" r="10" fill="#c2611f"></circle>
+  
+  <text x="84" y="284" font-family="Noto Sans SC, sans-serif" font-size="13" font-weight="700" fill="#12352d">拍题</text>
+  <text x="164" y="234" font-family="Noto Sans SC, sans-serif" font-size="13" font-weight="700" fill="#12352d">识别题型</text>
+  <text x="254" y="174" font-family="Noto Sans SC, sans-serif" font-size="13" font-weight="700" fill="#12352d">分步引导</text>
+  <text x="378" y="114" font-family="Noto Sans SC, sans-serif" font-size="13" font-weight="800" fill="#c2611f">学会想题</text>
+  
+  <g transform="translate(310 240) rotate(-20)">
+    <rect x="0" y="0" width="100" height="14" rx="2" fill="#fbe9d6" stroke="#c2611f" stroke-width="1.5"></rect>
+    <polygon points="100,0 116,7 100,14" fill="#c2611f"></polygon>
+    <rect x="0" y="0" width="20" height="14" fill="#a85219"></rect>
+  </g>
+</svg>

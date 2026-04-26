@@ -22,7 +22,6 @@ import {
   Mic,
   Pencil,
   PencilLine,
-  Send,
   Settings as SettingsIcon,
   ShieldCheck,
   Sparkles,
@@ -571,56 +570,96 @@ function TutorStory({ tutor, back, buy }: { tutor: Tutor; back: () => void; buy:
   )
 }
 function Settings({close,setStudent,setApp}:{close:()=>void;setStudent:(v:StudentView)=>void;setApp:(v:AppView)=>void}){return <div className="settings-modal" onClick={close}><div className="settings-card" onClick={e=>e.stopPropagation()}><header><strong>设置</strong><button className="close" onClick={close}>关闭</button></header><button onClick={()=>{close();setStudent('subjects')}}><Layers size={14}/> 切换科目</button><button onClick={()=>{close();setStudent('teachers')}}><GraduationCap size={14}/> 切换老师</button><button><ClipboardCheck size={14}/> 历史订单</button><button><Mail size={14}/> 评价反馈</button><button onClick={()=>{close();setApp('teacher')}}><Workflow size={14}/> 切换到教师端 Demo</button><button className="danger" onClick={()=>{close();setApp('welcome')}}><Flag size={14}/> 退出登录</button></div></div>}
+// 28 天滚动 streak 数据 — mock：连续 9 天，第 12-22 天断了一段
+const streakActivity: boolean[] = (() => {
+  const arr: boolean[] = []
+  for (let i = 0; i < 28; i++) {
+    if (i >= 19) arr.push(true)         // 最近 9 天连续
+    else if (i >= 11 && i <= 18) arr.push(false)  // 中间断了 8 天
+    else arr.push(Math.random() > 0.3)   // 28 天前那段散落练习
+  }
+  return arr
+})()
+
+interface RecentItem { topic: string; subject: '力学' | '电学' | '光学'; when: string; result: 'done' | 'stuck' }
+const recentMock: RecentItem[] = [
+  { topic: '动量守恒 · 两小球碰撞', subject: '力学', when: '8 分钟前', result: 'done' },
+  { topic: '恒定电流 · 闭合电路欧姆定律', subject: '电学', when: '昨天 21:14', result: 'stuck' },
+  { topic: '几何光学 · 凸透镜成像', subject: '光学', when: '前天 19:30', result: 'done' },
+]
+
 function StudentHome({ tutor, setView }: { tutor: Tutor; setView: (v: StudentView) => void }) {
   return (
     <section className="student-home">
       <header className="page-head">
-        <p className="eyebrow">本周学习</p>
-        <h1>欢迎回来，继续跟<span className="accent-name">{tutor.name}</span>练物理。</h1>
+        <p className="eyebrow">小明 · 高二物理</p>
+        <h1>继续跟<span className="accent-name">{tutor.name}</span>练物理</h1>
       </header>
 
       <div className="dashboard-grid">
-        {/* 主任务 — 拍题诊断 */}
-        <div className="main-task">
-          <span className="eyebrow">今天的主任务</span>
-          <h2>拍一道你不会的题</h2>
-          <p>AI 老师会先识别题型、找出常见卡点，再带你一步步推到答案。</p>
-          <div className="main-task-actions">
-            <button onClick={() => setView('capture')}><Camera size={16} /> 拍题诊断</button>
-            <button className="ghost" onClick={() => setView('coach')}><Pencil size={16} /> 输入题目</button>
-          </div>
+        <div className="dashboard-card" data-tone="primary">
+          <p className="label">本周{tutor.name}陪你练了</p>
+          <p className="stat">12<small>道题</small></p>
+          <p className="desc">其中 3 道你独立想出了思路</p>
+          <button className="cta-light" onClick={() => setView('capture')}>
+            <Camera size={14} /> 拍下一道题
+          </button>
         </div>
-
-        {/* 老师卡片 */}
         <div className="dashboard-card">
-          <div className="dc-head">
-            <img className="dc-avatar" src={tutor.avatar} alt={tutor.name} />
-            <div>
-              <strong>{tutor.name}</strong>
-              <span>{tutor.title}</span>
-            </div>
-            <span className="status-pill">已购买</span>
-          </div>
-          <p>本周一起诊断了 <em>12</em> 道题，集中卡点：研究对象选择、合外力判断。</p>
-          <button onClick={() => setView('coach')}><MessageSquareText size={16} /> 继续上次对话</button>
+          <p className="label">连续学习</p>
+          <p className="stat">9<small>天</small></p>
+          <p className="desc">距离上次断了已经 11 天</p>
         </div>
+      </div>
 
-        {/* 学习摘要 */}
-        <div className="dashboard-card">
-          <div className="dc-head">
-            <div className="dc-icon"><Mail size={20} /></div>
-            <div>
-              <strong>本周学习摘要</strong>
-              <span>4 月 20 日 — 4 月 26 日</span>
-            </div>
-          </div>
-          <ul className="dc-stats">
-            <li><em>12</em><span>题已诊断</span></li>
-            <li><em>8</em><span>独立解出</span></li>
-            <li><em>3</em><span>高频卡点</span></li>
-          </ul>
-          <button onClick={() => setView('summary')}><Mail size={16} /> 查看本周报告</button>
+      <div className="streak-block">
+        <div className="streak-head">
+          <h2>最近 28 天</h2>
+          <span className="hint">黄色边框为今天</span>
         </div>
+        <div className="streak-weekdays" aria-hidden="true">
+          {['一','二','三','四','五','六','日'].map((d) => <span key={d}>{d}</span>)}
+        </div>
+        <div className="streak-grid">
+          {streakActivity.map((active, i) => {
+            const today = new Date()
+            const cellDate = new Date(today)
+            cellDate.setDate(today.getDate() - (streakActivity.length - 1 - i))
+            const dayNum = cellDate.getDate()
+            const isToday = i === streakActivity.length - 1
+            return (
+              <span
+                key={i}
+                className="streak-cell"
+                data-active={String(active)}
+                data-today={isToday ? 'true' : undefined}
+                title={`${cellDate.getMonth() + 1}/${dayNum}${active ? ' · 有练习' : ' · 没练'}`}
+              >
+                {dayNum}
+              </span>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="recent-list">
+        <h2>最近练过</h2>
+        {recentMock.map((item) => (
+          <button
+            key={item.topic}
+            className="recent-card"
+            data-subject={item.subject}
+            data-result={item.result === 'stuck' ? 'stuck' : undefined}
+            onClick={() => setView('summary')}
+            type="button"
+          >
+            <div>
+              <p className="topic">{item.topic}</p>
+              <p className="when">{item.when}</p>
+            </div>
+            <span className="result">{item.result === 'done' ? '独立完成' : '卡了 2 步'}</span>
+          </button>
+        ))}
       </div>
 
       <div className="subject-strip">
@@ -658,25 +697,29 @@ function TeacherList({ list, setPreview, setView }: { list: Tutor[]; setPreview:
         {arr.length === 0 && <div className="empty-tip">暂无 — 看看其他老师</div>}
         {arr.map((t) => (
           <button
-            className={`teacher-card ${t.purchased ? 'purchased' : ''} ${!t.available ? 'locked' : ''}`}
+            className={`teacher-card ${t.purchased ? 'purchased' : ''}`}
+            data-status={!t.available ? 'beta' : undefined}
             key={t.id}
-            onClick={() => { setPreview(t); setView('teacherDetail') }}
+            onClick={() => { if (!t.available) return; setPreview(t); setView('teacherDetail') }}
+            disabled={!t.available}
             title={`${t.schoolTag} · ${t.years} · ${t.result}`}
           >
-            <img className="tutor-portrait" src={t.avatar} alt={`${t.name} 头像`} />
-            <div className="tc-head">
-              <strong>{t.name}</strong>
-              {t.purchased && <span className="status-pill">已购买</span>}
-              {!t.available && <span className="status-pill muted">内测中</span>}
+            <div className="portrait">
+              <img src={t.avatar} alt={`${t.name} 头像`} />
             </div>
-            <p>{t.title}</p>
-            <em>{t.fit}</em>
-            <div className="teacher-tags">
-              {t.specialties.slice(0, 3).map((x) => <span key={x}>{x}</span>)}
+            <div className="tc-head">
+              <p className="name">{t.name}</p>
+              <p className="subline">{t.title}</p>
+              {t.purchased && <span className="status-pill">已购买</span>}
+            </div>
+            <div className="meta">
+              <span>★ {t.rating}</span>
+              <span>{t.years}</span>
+              {t.specialties.slice(0, 2).map((x) => <span key={x}>{x}</span>)}
             </div>
             <div className="tc-foot">
-              <span className="tutor-price">¥{t.month}/月 · ¥{t.year}/年</span>
-              <span className="tutor-rating">★ {t.rating}</span>
+              <strong>¥{t.month}</strong>
+              <em>/月 · ¥{t.year}/年</em>
             </div>
           </button>
         ))}
@@ -820,69 +863,86 @@ function Coach({ tutor, session, draft, setDraft, send, step, setStep, card, isT
         </div>
       </header>
       <section className="coach-layout">
-        <main className="step-panel">
-          <div className="problem-banner">
-            <span>本题</span>
-            <p>{diagnosis.text}</p>
-          </div>
+        <div className="coach-shell">
+          {/* 顶部 sticky 题卡 — 题图缩略 + 题号 + 题型/难度（不渲染 OCR 文字） */}
+          <header className="coach-question">
+            <button className="thumb" type="button" aria-label="放大查看题图">
+              <ImageIcon size={28} />
+            </button>
+            <div className="qmeta">
+              <span className="qno">第 3 题 · 2024 朝阳一模</span>
+              <div className="qtags">
+                <span className="topic">{card.topic}</span>
+                <span className="difficulty">{diagnosis.difficulty}</span>
+              </div>
+            </div>
+          </header>
 
-          {/* 步骤进度条 */}
-          <div className="step-progress">
+          {/* 步骤进度（保留功能性引导） */}
+          <div className="step-progress" style={{ padding: '12px 18px 0' }}>
             {card.methodSteps.map((_, i) => (
               <span key={i} className={i === safeStep ? 'active' : i < safeStep ? 'done' : ''} />
             ))}
           </div>
 
-          <span className="step-pill">当前步骤 {safeStep + 1}/{card.methodSteps.length} · 该你了</span>
-          <h2>{current}</h2>
-          <p>这道题先别急着套公式。你觉得这一步应该怎么判断？</p>
-
-          <div className="choice-grid">
-            {choices.map((c) => (
-              <button key={c} onClick={() => send(`我选：${c}`)}>{c}</button>
-            ))}
+          <div style={{ padding: '12px 18px 0' }}>
+            <span className="step-pill">当前步骤 {safeStep + 1}/{card.methodSteps.length} · 该你了</span>
+            <h2 style={{ margin: '8px 0 4px', fontSize: 20 }}>{current}</h2>
+            <div className="choice-grid" style={{ marginTop: 8 }}>
+              {choices.map((c) => (
+                <button key={c} onClick={() => send(`我选：${c}`)}>{c}</button>
+              ))}
+            </div>
+            <div className="guide-actions">
+              <button onClick={() => send(`请提示我${current}`)}><Lightbulb size={14} /> 提示一下</button>
+              <button
+                onClick={() => setStep(Math.min(safeStep + 1, card.methodSteps.length - 1))}
+                disabled={safeStep >= card.methodSteps.length - 1}
+              >
+                继续下一步
+              </button>
+              <button onClick={() => send('看完整解析')}><BookOpen size={14} /> 看完整解析</button>
+              <button onClick={() => send('我来试试')}><Pencil size={14} /> 我来试试</button>
+            </div>
           </div>
 
-          <div className="guide-actions">
-            <button onClick={() => send(`请提示我${current}`)}><Lightbulb size={14} /> 提示一下</button>
-            <button
-              onClick={() => setStep(Math.min(safeStep + 1, card.methodSteps.length - 1))}
-              disabled={safeStep >= card.methodSteps.length - 1}
-            >
-              继续下一步
-            </button>
-            <button onClick={() => send('看完整解析')}><BookOpen size={14} /> 看完整解析</button>
-            <button onClick={() => send('我来试试')}><Pencil size={14} /> 我来试试</button>
-          </div>
-
-          <div className="chat-mini">
+          {/* 对话流 */}
+          <div className="coach-thread">
             {session.messages.map((m) => (
-              <div className={`chat-row ${m.role}`} key={m.id}>
-                {m.role === 'teacher' && <img className="chat-avatar" src={tutor.avatar} alt={tutor.name} />}
-                <div className="chat-bubble">{m.content}</div>
+              <div key={m.id} className={`coach-bubble ${m.role === 'teacher' ? 'ai' : 'user'}`}>
+                <Tex>{m.content}</Tex>
+                {m.role === 'teacher' && (
+                  <span className="verified"><CheckCircle2 /> 刘老师审核通过</span>
+                )}
               </div>
             ))}
             {isThinking && (
-              <div className="chat-row teacher">
-                <img className="chat-avatar" src={tutor.avatar} alt={tutor.name} />
-                <div className="chat-bubble typing-bubble"><span /><span /><span /></div>
+              <div className="coach-bubble ai">
+                <span className="typing-bubble"><span /><span /><span /></span>
               </div>
             )}
           </div>
 
-          <div className="composer-box">
-            <label className="upload-button"><Camera size={16} /> 拍题</label>
-            <textarea
+          {/* 底部 sticky 输入栏 — 拍照圆形主 CTA + 文字次要 fallback */}
+          <div className="coach-input">
+            <input
+              type="text"
+              className="coach-text-input"
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(draft) } }}
-              placeholder="输入你的想法，按 Enter 发送…"
+              onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(draft) } }}
+              placeholder="或者直接打字提问…"
             />
-            <button className="send-button" onClick={() => send(draft)} disabled={!draft.trim()}>
-              <Send size={14} /> 发送
+            <button
+              className="coach-camera-btn"
+              type="button"
+              aria-label="拍题"
+              onClick={() => setView('capture')}
+            >
+              <Camera />
             </button>
           </div>
-        </main>
+        </div>
 
         <aside className="path-card">
           <strong>本题路径</strong>

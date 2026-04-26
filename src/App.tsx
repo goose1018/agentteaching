@@ -4,16 +4,25 @@ import {
   BookOpen,
   Camera,
   CheckCircle2,
+  ClipboardCheck,
+  Eye,
   Flag,
   GraduationCap,
   Image as ImageIcon,
+  Layers,
   Lightbulb,
+  ListChecks,
   Mail,
   MessageSquareText,
   Mic,
   Pencil,
   PencilLine,
+  Send,
   Settings as SettingsIcon,
+  ShieldCheck,
+  Sparkles,
+  UsersRound,
+  Workflow,
 } from 'lucide-react'
 import { createAnswerReview, findMethodCard, recognizeProblemImage } from './aiTasks'
 import { generateAnswerWithProvider } from './aiProvider'
@@ -53,9 +62,33 @@ const defaultTutor = tutors.find(t => t.purchased) ?? tutors[0]
 const defaultDiagnosis: Diagnosis = { text:'光滑水平面上，小车 A 与小车 B 发生碰撞，碰后粘在一起运动。已知两车质量和碰前速度，求碰后共同速度。', subject:'高中物理', type:'动量守恒 · 碰撞后共同速度', difficulty:'中等', confidence:0.92, imageInfo:'两个物体连接，水平面运动，涉及碰撞前后速度。', stuck:['没有先选研究对象','把某个力直接当成合外力','不知道什么时候列动量守恒方程'] }
 const firstMessage: Message = { id:'m1', role:'teacher', content:'把题发上来。先别急着找公式，物理题先看对象、过程和条件；这三样看清楚，公式自然会出来。', time:'09:41', tags:['高中物理','解题路径'] }
 const fmt = () => new Intl.DateTimeFormat('zh-CN',{hour:'2-digit',minute:'2-digit'}).format(new Date())
+const statusLabel = (s: MethodCard['status']) => ({ approved: '已发布', needs_review: '待审核', draft: '草稿', disabled: '已禁用' }[s] ?? s)
+const reviewStatusLabel = (s: AnswerReview['status']) => ({ pending: '待审核', approved: '已通过', needs_fix: '要求修改', rejected_example: '已加入反例库' }[s] ?? s)
 
-function Welcome({go}:{go:(v:AppView)=>void}){return <main className="welcome-page"><header className="welcome-nav"><img className="brand-logo-horizontal" src="/logo-horizontal.svg" alt="PhysicsPath · 名师 AI 解题教练" /></header><section className="welcome-hero"><div><span className="hero-kicker">名师 AI 解题教练</span><h1>不是搜答案，而是训练你怎么想题。</h1><p>拍一道题，AI 老师会先识别题型，再按老师的方法一步步带你分析。</p><div className="hero-actions"><button onClick={()=>go('student')}><Backpack size={18}/> 我是学生，开始学习</button><button className="secondary" onClick={()=>go('teacher')}><GraduationCap size={18}/> 我是老师，训练我的 AI 分身</button></div><small>演示版可在设置中切换学生端 / 教师端</small></div><div className="welcome-illustration"><img src="/welcome.svg" alt="拍题 → 诊断 → 分步引导" /></div></section></main>}
-function Settings({close,setStudent,setApp}:{close:()=>void;setStudent:(v:StudentView)=>void;setApp:(v:AppView)=>void}){return <div className="settings-modal" onClick={close}><div className="settings-card" onClick={e=>e.stopPropagation()}><header><strong>设置</strong><button onClick={close}>关闭</button></header><button onClick={()=>{close();setStudent('subjects')}}>切换科目</button><button onClick={()=>{close();setStudent('teachers')}}>切换老师</button><button>历史订单</button><button>评价反馈</button><button onClick={()=>{close();setApp('teacher')}}>切换到教师端 Demo</button><button className="danger" onClick={()=>{close();setApp('welcome')}}>退出登录</button></div></div>}
+function Welcome({go}:{go:(v:AppView)=>void}){return <main className="welcome-page">
+  <header className="welcome-nav"><img className="brand-logo-horizontal" src="/logo-horizontal.svg" alt="PhysicsPath · 名师 AI 解题教练" /></header>
+  <section className="welcome-hero">
+    <div>
+      <span className="hero-kicker">名师 AI 解题教练</span>
+      <h1>不是搜答案，<br/>而是训练你怎么想题。</h1>
+      <p>拍一道题，AI 老师会先识别题型，再按老师的方法一步步带你分析。</p>
+      <div className="hero-actions">
+        <button onClick={()=>go('student')}><Backpack size={18}/> 我是学生，开始学习</button>
+        <button className="secondary" onClick={()=>go('teacher')}><GraduationCap size={18}/> 我是老师，训练我的 AI 分身</button>
+      </div>
+      <small>演示版可在设置中切换学生端 / 教师端</small>
+    </div>
+    <div className="welcome-illustration"><img src="/welcome.svg" alt="拍题 → 诊断 → 分步引导" /></div>
+  </section>
+  <section className="trust-strip">
+    <div><ShieldCheck size={22}/><div><strong>不直接给答案</strong><span>AI 按老师方法一步步引导，避免抄袭。</span></div></div>
+    <div><ClipboardCheck size={22}/><div><strong>方法卡老师亲审</strong><span>每条讲题方法都要本人确认才会上线。</span></div></div>
+    <div><Mail size={22}/><div><strong>每周给家长摘要</strong><span>哪些卡点在退步，哪些在进步，一目了然。</span></div></div>
+    <div><UsersRound size={22}/><div><strong>真实老师参与</strong><span>不是凭空捏造的 AI，背后有名师收益分成。</span></div></div>
+  </section>
+  <footer className="welcome-foot">© PhysicsPath · 演示版本，仅供试用 · 学习辅助工具，不替代学校教学</footer>
+</main>}
+function Settings({close,setStudent,setApp}:{close:()=>void;setStudent:(v:StudentView)=>void;setApp:(v:AppView)=>void}){return <div className="settings-modal" onClick={close}><div className="settings-card" onClick={e=>e.stopPropagation()}><header><strong>设置</strong><button className="close" onClick={close}>关闭</button></header><button onClick={()=>{close();setStudent('subjects')}}><Layers size={14}/> 切换科目</button><button onClick={()=>{close();setStudent('teachers')}}><GraduationCap size={14}/> 切换老师</button><button><ClipboardCheck size={14}/> 历史订单</button><button><Mail size={14}/> 评价反馈</button><button onClick={()=>{close();setApp('teacher')}}><Workflow size={14}/> 切换到教师端 Demo</button><button className="danger" onClick={()=>{close();setApp('welcome')}}><Flag size={14}/> 退出登录</button></div></div>}
 function StudentHome({tutor,setView}:{tutor:Tutor;setView:(v:StudentView)=>void}){return <section className="student-home"><p className="eyebrow">学习驾驶舱</p><h1>欢迎回来，继续跟{tutor.name}练物理</h1><div className="dashboard-grid"><div className="main-task"><span>主任务</span><h2>拍一道不会的题</h2><p>AI 老师会先识别学科和题型，再匹配合适的老师方法。</p><button onClick={()=>setView('capture')}><Camera size={16}/> 拍题诊断</button><button className="ghost" onClick={()=>setView('coach')}><Pencil size={16}/> 输入题目</button></div><div className="dashboard-card"><span>我的老师</span><h3>{tutor.name} · {tutor.title}</h3><p>本周诊断 12 道题，常见卡点：研究对象选择、合外力判断。</p><button onClick={()=>setView('coach')}><MessageSquareText size={16}/> 继续上次对话</button></div><div className="dashboard-card"><span>最近学习摘要</span><h3>本周学习报告</h3><p>已诊断 12 道题，高频卡点：牛顿第二定律、动量守恒。建议练连接体问题 3 道。</p><button onClick={()=>setView('summary')}><Mail size={16}/> 查看本周报告</button></div></div><div className="mini-subjects">{subjects.map(s=><button key={s.name} onClick={()=>setView('subjects')}><strong>{s.name}</strong><span>{s.status}</span></button>)}</div></section>}
 function SubjectSelect({selected,setSelected,setView}:{selected:string;setSelected:(s:string)=>void;setView:(v:StudentView)=>void}){return <section className="selection-page"><p className="eyebrow">选择科目</p><h1>今天想练哪一科？</h1><div className="subject-grid">{subjects.map(s=><button className={selected===s.name?'active':''} key={s.name} onClick={()=>{setSelected(s.name);setView('teachers')}}><span className="subject-icon">{s.icon}</span><strong>{s.name}</strong><span>{s.status}</span></button>)}</div></section>}
 function avatarFor(id: string) {
@@ -64,12 +97,12 @@ function avatarFor(id: string) {
   return hash === 0 ? '/teachers/avatar-a.svg' : '/teachers/avatar-b.svg'
 }
 function TeacherList({list,setPreview,setView}:{list:Tutor[];setPreview:(t:Tutor)=>void;setView:(v:StudentView)=>void}){const rail=(title:string,arr:Tutor[]) => <div className="teacher-rail"><h2>{title}</h2><div className="teacher-grid-cards">{arr.length===0&&<div className="empty-tip">暂无已购买老师，可以先看下方老师介绍。</div>}{arr.map(t=><button className={`teacher-card ${t.purchased?'purchased':'locked'}`} key={t.id} onClick={()=>{setPreview(t);setView('teacherDetail')}} title={`${t.schoolTag} · ${t.years} · ${t.result}`}><img className="tutor-portrait" src={avatarFor(t.id)} alt={`${t.name} 头像`} /><strong>{t.name}</strong><p>{t.title}</p><em>{t.fit}</em><div className="teacher-tags">{t.specialties.map(x=><span key={x}>{x}</span>)}</div><span className="tutor-price">¥{t.month}/月 · ¥{t.year}/年</span></button>)}</div></div>;return <section className="selection-page"><p className="eyebrow">选择老师</p><h1>选择你的解题教练</h1>{rail('已购买',list.filter(t=>t.purchased))}{rail('更多老师',list.filter(t=>!t.purchased))}</section>}
-function TutorDetail({tutor,buy,enter,back}:{tutor:Tutor;buy:()=>void;enter:()=>void;back:()=>void}){return <section className="selection-page tutor-detail"><button className="back-link" onClick={back}>返回老师列表</button><div className="tutor-detail-card"><img className="tutor-portrait large" src={avatarFor(tutor.id)} alt={`${tutor.name} 头像`} /><div><p className="eyebrow">{tutor.subject}</p><h1>{tutor.name}</h1><p className="tutor-subline">{tutor.title} · {tutor.schoolTag}</p><p className="tutor-bio">{tutor.bio}</p><div className="tutor-meta"><span>{tutor.fit}</span><span>{tutor.years}</span><span>{tutor.result}</span><span>家长评分 {tutor.rating}</span><span>{tutor.students} 名学生使用</span></div><div className="sample-box"><strong>试看样例</strong><p>学生：动量守恒什么时候能用？</p><p>{tutor.name}：先别急着背公式。你先看三件事：研究系统是谁？外力冲量能不能忽略？过程是不是短时间相互作用？</p></div><div className="tutor-price-row"><strong>¥{tutor.month}/月</strong><span>¥{tutor.year}/年</span></div><div className="tutor-actions">{tutor.purchased?<button onClick={enter}>进入对话</button>:<><button onClick={buy}>免费试看</button><button className="ghost">查看套餐</button></>}</div></div></div></section>}
+function TutorDetail({tutor,buy,enter,back}:{tutor:Tutor;buy:()=>void;enter:()=>void;back:()=>void}){return <section className="selection-page tutor-detail"><button className="back-link" onClick={back}>← 返回老师列表</button><div className="tutor-detail-card"><img className="tutor-portrait large" src={avatarFor(tutor.id)} alt={`${tutor.name} 头像`} /><div><p className="eyebrow">{tutor.subject}</p><h1>{tutor.name}</h1><p className="tutor-subline">{tutor.title} · {tutor.schoolTag}</p><p className="tutor-bio">{tutor.bio}</p><div className="tutor-meta"><span>{tutor.fit}</span><span>{tutor.years}</span><span>{tutor.result}</span><span>家长评分 {tutor.rating}</span><span>{tutor.students} 名学生使用</span></div><div className="sample-box"><strong>试看样例</strong><p>学生：动量守恒什么时候能用？</p><p>{tutor.name}：先别急着背公式。你先看三件事：研究系统是谁？外力冲量能不能忽略？过程是不是短时间相互作用？</p></div><div className="tutor-price-row"><strong>¥{tutor.month}<small>/月</small></strong><span>¥{tutor.year}/年</span></div><div className="tutor-actions">{tutor.purchased?<button onClick={enter}><MessageSquareText size={14}/> 进入对话</button>:<><button onClick={buy}><Eye size={14}/> 免费试看</button><button className="ghost">查看套餐</button></>}</div></div></div></section>}
 function Capture({setDiagnosis,setView}:{setDiagnosis:(d:Diagnosis)=>void;setView:(v:StudentView)=>void}){return <section className="flow-page"><p className="eyebrow">拍题诊断</p><h1>拍下你不会的题</h1><div className="flow-card"><p>建议只拍一道题，保证题干和图像完整。如果有图，请把图一起拍进去。</p><button onClick={()=>{const r=recognizeProblemImage('physics-demo.png');setDiagnosis({...defaultDiagnosis,text:r.text,confidence:r.confidence});setView('confirm')}}><Camera size={16}/> 拍照</button><button className="ghost" onClick={()=>setView('confirm')}><ImageIcon size={16}/> 从相册选择</button><textarea placeholder="也可以手动输入题目" onChange={e=>setDiagnosis({...defaultDiagnosis,text:e.target.value})}/></div></section>}
-function Confirm({diagnosis,setDiagnosis,setView}:{diagnosis:Diagnosis;setDiagnosis:(d:Diagnosis)=>void;setView:(v:StudentView)=>void}){return <section className="flow-page"><p className="eyebrow">题干确认</p><h1>我识别到的题目</h1><div className="flow-card"><div className="confirm-grid"><span>学科：{diagnosis.subject}</span><span>题型：{diagnosis.type}</span><span>难度：{diagnosis.difficulty}</span><span>置信度：{Math.round(diagnosis.confidence*100)}%</span></div><label>题干<textarea value={diagnosis.text} onChange={e=>setDiagnosis({...diagnosis,text:e.target.value})}/></label><p>图像信息：{diagnosis.imageInfo}</p><button onClick={()=>setView('diagnosis')}>识别正确，继续</button><button className="ghost">有错误，我来修改</button></div></section>}
+function Confirm({diagnosis,setDiagnosis,setView}:{diagnosis:Diagnosis;setDiagnosis:(d:Diagnosis)=>void;setView:(v:StudentView)=>void}){const lowConf=diagnosis.confidence<0.8;return <section className="flow-page"><p className="eyebrow">题干确认</p><h1>我识别到的题目</h1><div className="flow-card">{lowConf&&<div className="confirm-warning"><strong>识别置信度只有 {Math.round(diagnosis.confidence*100)}%</strong><span>请先核对题干和数字，必要时重新拍一张更清晰的照片再继续。</span></div>}<div className="confirm-grid"><span>学科：{diagnosis.subject}</span><span>题型：{diagnosis.type}</span><span>难度：{diagnosis.difficulty}</span><span>置信度：{Math.round(diagnosis.confidence*100)}%</span></div><label>题干<textarea value={diagnosis.text} onChange={e=>setDiagnosis({...diagnosis,text:e.target.value})}/></label><p>图像信息：{diagnosis.imageInfo}</p><button onClick={()=>setView('diagnosis')}><CheckCircle2 size={16}/> 识别正确，继续</button><button className="ghost"><PencilLine size={16}/> 有错误，我来修改</button></div></section>}
 function DiagnosisPage({diagnosis,tutor,setView,setPreview}:{diagnosis:Diagnosis;tutor:Tutor;setView:(v:StudentView)=>void;setPreview:(t:Tutor)=>void}){return <section className="flow-page"><p className="eyebrow"><span className="dot-amber"/> 诊断结果</p><h1>这道题的常见卡点</h1><div className="flow-card"><div className="stuck-list">{diagnosis.stuck.map((x,i)=>(<div className="stuck-item" key={x}><span className="stuck-num">{i+1}</span><div>{x}</div></div>))}</div><div className="recommend-card"><strong>推荐老师：{tutor.name}</strong><span>{tutor.title}</span><p>适合：{tutor.fit}</p></div><button onClick={()=>{setPreview(tutor);setView('trial')}}>免费试看{tutor.name}讲这道题</button><button className="ghost" onClick={()=>setView('teachers')}>查看更多老师</button></div></section>}
 function Trial({tutor,setTutor,setView}:{tutor:Tutor;setTutor:(t:Tutor)=>void;setView:(v:StudentView)=>void}){return <section className="flow-page"><p className="eyebrow">试看说明</p><h1>{tutor.name}不会直接给答案</h1><div className="flow-card"><p>它会先带你判断题型、选研究对象、画关键关系，再一步步推到答案。</p><button onClick={()=>{setTutor(tutor);setView('coach')}}>开始试看</button></div></section>}
-function Coach({tutor,session,draft,setDraft,send,step,setStep,card,isThinking,setView}:{tutor:Tutor;session:Session;draft:string;setDraft:(s:string)=>void;send:(s:string)=>void;step:number;setStep:(n:number)=>void;card:MethodCard;isThinking:boolean;setView:(v:StudentView)=>void}){const current=card.methodSteps[Math.min(step,card.methodSteps.length-1)];return <><header className="topbar"><div><p className="eyebrow">{tutor.subject} · {tutor.name}</p><h1>{tutor.title}训练中</h1></div><span className="status-pill">已购买</span></header><section className="coach-layout"><main className="step-panel"><span>当前步骤 {step+1}/{card.methodSteps.length} · 该你了</span><h2>{current}</h2><p>这道题先别急着套公式。你觉得这一步应该怎么判断？</p><div className="choice-grid"><button>物体 A</button><button>物体 B</button><button>整体系统</button><button>我不确定</button></div><div className="guide-actions"><button onClick={()=>send(`请提示我${current}`)}><Lightbulb size={14}/> 提示一下</button><button onClick={()=>setStep(Math.min(step+1,card.methodSteps.length-1))}>继续下一步</button><button onClick={()=>send('看完整解析')}><BookOpen size={14}/> 看完整解析</button><button onClick={()=>send('我来试试')}><Pencil size={14}/> 我来试试</button></div><div className="chat-mini">{session.messages.map(m=><div className={m.role} key={m.id}>{m.content}</div>)}{isThinking&&<div className="teacher">正在思考...</div>}</div><div className="composer-box"><label className="upload-button"><Camera size={16}/> 拍题</label><textarea value={draft} onChange={e=>setDraft(e.target.value)} placeholder="输入你的想法..."/><button className="send-button" onClick={()=>send(draft)}>发送</button></div></main><aside className="path-card"><strong>本题路径</strong>{card.methodSteps.map((x,i)=><span className={i===step?'active':''} key={x}>{i+1}. {x}</span>)}<button onClick={()=>setView('summary')}>完成并生成总结</button></aside></section></>}
+function Coach({tutor,session,draft,setDraft,send,step,setStep,card,isThinking,setView,diagnosis}:{tutor:Tutor;session:Session;draft:string;setDraft:(s:string)=>void;send:(s:string)=>void;step:number;setStep:(n:number)=>void;card:MethodCard;isThinking:boolean;setView:(v:StudentView)=>void;diagnosis:Diagnosis}){const current=card.methodSteps[Math.min(step,card.methodSteps.length-1)];return <><header className="topbar"><div><p className="eyebrow">{tutor.subject} · {tutor.name}</p><h1>{tutor.title}训练中</h1></div><span className="status-pill">已购买</span></header><section className="coach-layout"><main className="step-panel"><div className="problem-banner"><span>本题</span><p>{diagnosis.text}</p></div><span className="step-pill">当前步骤 {step+1}/{card.methodSteps.length} · 该你了</span><h2>{current}</h2><p>这道题先别急着套公式。你觉得这一步应该怎么判断？</p><div className="choice-grid"><button>物体 A</button><button>物体 B</button><button>整体系统</button><button>我不确定</button></div><div className="guide-actions"><button onClick={()=>send(`请提示我${current}`)}><Lightbulb size={14}/> 提示一下</button><button onClick={()=>setStep(Math.min(step+1,card.methodSteps.length-1))}>继续下一步</button><button onClick={()=>send('看完整解析')}><BookOpen size={14}/> 看完整解析</button><button onClick={()=>send('我来试试')}><Pencil size={14}/> 我来试试</button></div><div className="chat-mini">{session.messages.map(m=><div className={m.role} key={m.id}>{m.content}</div>)}{isThinking&&<div className="teacher typing-bubble"><span/><span/><span/></div>}</div><div className="composer-box"><label className="upload-button"><Camera size={16}/> 拍题</label><textarea value={draft} onChange={e=>setDraft(e.target.value)} onKeyDown={(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(draft)}}} placeholder="输入你的想法，按 Enter 发送…"/><button className="send-button" onClick={()=>send(draft)}><Send size={14}/> 发送</button></div></main><aside className="path-card"><strong>本题路径</strong>{card.methodSteps.map((x,i)=><span className={i===step?'active':''} key={x}>{i+1}. {x}</span>)}<button onClick={()=>setView('summary')}>完成并生成总结</button></aside></section></>}
 function Summary({diagnosis,card,setView}:{diagnosis:Diagnosis;card:MethodCard;setView:(v:StudentView)=>void}){return <section className="flow-page"><p className="eyebrow">学习总结</p><h1>本题你学会了什么</h1><div className="summary-grid"><div className="student-summary"><strong>学生总结</strong><p><b>知识点：</b>{card.topic}</p><p><b>关键路径：</b>{card.methodSteps.join(' → ')}</p><p><b>刚才卡点：</b>{card.commonError}</p><p><b>下一步建议：</b>再练 2 道同类题。</p></div><div className="parent-summary-card"><div className="ps-eyebrow"><span className="dot-amber"/> 本题家长摘要 · 待发送</div><div className="ps-head"><div><strong>小明 · 4 月 26 日 · 高中物理</strong></div><div className="ps-meta">由 <b>{card.topic}方法库</b> 引导<br/>用时 8 分钟 · {card.methodSteps.length} 步走完</div></div><div className="ps-headline">这道题主要卡在 <em>{diagnosis.stuck[0]}</em>。</div><div className="ps-kv"><div className="k">影响范围</div><div className="v">牛顿第二定律 · 动量 · 能量综合题</div></div><div className="ps-kv"><div className="k">下一步建议</div><div className="v">练 <b>3 道「研究对象选择」专项题</b>，重点训练第一步判断。</div></div><div className="ps-foot"><span>识别置信度 92%</span><span>第 12 次诊断</span><span>本周 5 次对话</span></div><div className="ps-cta"><button className="ps-pri"><Mail size={14}/> 发送给家长</button><button className="ps-ghost">复制摘要</button></div></div></div><button className="next" onClick={()=>setView('pricing')}>继续使用</button></section>}
 function Pricing({tutor,setView}:{tutor:Tutor;setView:(v:StudentView)=>void}){return <section className="flow-page"><p className="eyebrow">开通老师陪练</p><h1>继续使用{tutor.name}老师</h1><div className="pricing-grid"><div><span>月卡</span><strong>¥{tutor.month}<small>/月</small></strong><p>每月 120 次拍题诊断，30 次深度讲解，每周学习报告。</p><button className="ghost" onClick={()=>setView('home')}>开通月卡</button></div><div className="recommended"><span className="rec-badge">推荐</span><span>年卡</span><strong>¥{tutor.year}<small>/年</small></strong><p>全年 1500 次拍题诊断，400 次深度讲解，每周学习报告，优先使用新方法库。</p><button onClick={()=>setView('home')}>开通年卡</button></div></div></section>}
 
@@ -149,23 +182,27 @@ function TeacherApp(props: TeacherProps) {
     disabled: cards.filter((c) => c.status === 'disabled').length,
   }
 
+  const navItems: { id: TeacherView; label: string; Icon: typeof Sparkles }[] = [
+    { id: 'home', label: '训练 AI 分身', Icon: Sparkles },
+    { id: 'methods', label: '我的讲题方法', Icon: Layers },
+    { id: 'review', label: '审核 AI 回答', Icon: ClipboardCheck },
+    { id: 'records', label: '学生问题记录', Icon: ListChecks },
+    { id: 'publish', label: '发布到学生端', Icon: Workflow },
+    { id: 'quality', label: '质量设置', Icon: ShieldCheck },
+  ]
+
   return (
     <main className="app-shell teacher-site">
       <aside className="sidebar">
-        <div className="brand"><div className="brand-mark">训</div><div><strong>老师工作台</strong><span>训练我的 AI 分身</span></div></div>
+        <div className="brand"><img className="brand-mark-img" src="/logo-mark.svg" alt="" /><div><strong>老师工作台</strong><span>训练我的 AI 分身</span></div></div>
         <nav className="mode-nav" aria-label="教师端">
-          {[
-            ['home', '训练 AI 分身'],
-            ['methods', '我的讲题方法'],
-            ['review', '审核 AI 回答'],
-            ['records', '学生问题记录'],
-            ['publish', '发布到学生端'],
-            ['quality', '质量设置'],
-          ].map(([value, label]) => (
-            <button className={view === value ? 'active' : ''} key={value} type="button" onClick={() => setView(value as TeacherView)}>{label}</button>
+          {navItems.map(({ id, label, Icon }) => (
+            <button className={view === id ? 'active' : ''} key={id} type="button" onClick={() => setView(id)}>
+              <Icon size={16}/> {label}
+            </button>
           ))}
         </nav>
-        <button className="teacher-link" type="button" onClick={() => setApp('student')}>查看学生端效果</button>
+        <button className="teacher-link" type="button" onClick={() => setApp('student')}><Eye size={14}/> 查看学生端效果</button>
       </aside>
       <section className="workspace">
         <header className="topbar">
@@ -232,7 +269,7 @@ function TeacherApp(props: TeacherProps) {
                   <button className={`method-card ${activeCardId === card.id ? 'active' : ''}`} key={card.id} type="button" onClick={() => setActiveCardId(card.id)}>
                     <div>
                       <strong>{card.topic}</strong>
-                      <span className={card.status}>{card.status}</span>
+                      <span className={card.status}>{statusLabel(card.status)}</span>
                     </div>
                     <p>{card.teacherMove}</p>
                   </button>
@@ -242,7 +279,7 @@ function TeacherApp(props: TeacherProps) {
             <div className="panel">
               <div className="panel-title">
                 <h2>编辑这条讲题方法</h2>
-                <span>{activeCard.status}</span>
+                <span className={`status-tag ${activeCard.status}`}>{statusLabel(activeCard.status)}</span>
               </div>
               <aside className="method-detail static">
                 <label className="edit-field"><span>知识点</span><input value={activeCard.topic} onChange={(e) => updateActiveCard({ topic: e.target.value })} /></label>
@@ -276,7 +313,7 @@ function TeacherApp(props: TeacherProps) {
                   <article className="chatlog-item" key={item.id}>
                     <header>
                       <strong>命中：{item.methodCardTopic}</strong>
-                      <span>状态：{item.status}</span>
+                      <span className={`status-tag ${item.status}`}>{reviewStatusLabel(item.status)}</span>
                     </header>
                     <p className="chatlog-question">学生：{item.question}</p>
                     <p className="chatlog-answer">AI 分身：{item.answer}</p>
@@ -312,7 +349,7 @@ function TeacherApp(props: TeacherProps) {
               <div className="method-list">
                 {cards.filter((c) => c.status === 'approved').map((card) => (
                   <article className="method-card" key={card.id}>
-                    <div><strong>{card.topic}</strong><span className="approved">已发布</span></div>
+                    <div><strong>{card.topic}</strong><span className="status-tag approved">已发布</span></div>
                     <p>{card.teacherMove}</p>
                   </article>
                 ))}
@@ -328,10 +365,10 @@ function TeacherApp(props: TeacherProps) {
               <h2>这些规则保证 AI 不会替你乱说话</h2>
             </div>
             <div className="trust-grid full-width">
-              <div><strong>低置信度题目</strong><p>不直接回答，提示学生重新拍题或修改题干。</p></div>
-              <div><strong>难题模式</strong><p>遇到压轴题自动启用深度讲解和分步提示。</p></div>
-              <div><strong>跨学科题目</strong><p>提示学生切换老师，不在你的范围内随意作答。</p></div>
-              <div><strong>高风险回答</strong><p>命中风险词或低置信路径时，进入老师审核队列。</p></div>
+              <div><div className="quality-head"><Eye size={16}/><strong>低置信度题目</strong></div><p>不直接回答，提示学生重新拍题或修改题干。</p></div>
+              <div><div className="quality-head"><Sparkles size={16}/><strong>难题模式</strong></div><p>遇到压轴题自动启用深度讲解和分步提示。</p></div>
+              <div><div className="quality-head"><Workflow size={16}/><strong>跨学科题目</strong></div><p>提示学生切换老师，不在你的范围内随意作答。</p></div>
+              <div><div className="quality-head"><ShieldCheck size={16}/><strong>高风险回答</strong></div><p>命中风险词或低置信路径时，进入老师审核队列。</p></div>
             </div>
           </section>
         )}
@@ -444,12 +481,12 @@ function App() {
     <main className="app-shell student-site">
       <aside className="sidebar">
         <div className="brand"><div className="user-avatar">小</div><strong>同学好</strong></div>
-        <button className="new-chat" type="button" onClick={createSession}>+ 新建对话</button>
+        <button className="new-chat" type="button" onClick={createSession}><Pencil size={14}/> 新建对话</button>
         <div className="sidebar-section">
           <span className="section-title">历史会话</span>
           {sessions.map((session) => (
             <button className={`session-item ${session.id === activeSessionId ? 'active' : ''}`} key={session.id} type="button" onClick={() => { setActiveSessionId(session.id); setStudentView('coach') }}>
-              <span>{session.title}</span>
+              <MessageSquareText size={14}/> <span>{session.title}</span>
             </button>
           ))}
         </div>
@@ -465,7 +502,7 @@ function App() {
         {studentView === 'confirm' && <Confirm diagnosis={diagnosis} setDiagnosis={setDiagnosis} setView={setStudentView} />}
         {studentView === 'diagnosis' && <DiagnosisPage diagnosis={diagnosis} tutor={recommendedTutor} setPreview={setPreviewTutor} setView={setStudentView} />}
         {studentView === 'trial' && <Trial tutor={previewTutor} setTutor={setSelectedTutor} setView={setStudentView} />}
-        {studentView === 'coach' && <Coach tutor={selectedTutor} session={activeSession} draft={draft} setDraft={setDraft} send={sendQuestion} step={step} setStep={setStep} card={methodCard} isThinking={isThinking} setView={setStudentView} />}
+        {studentView === 'coach' && <Coach tutor={selectedTutor} session={activeSession} draft={draft} setDraft={setDraft} send={sendQuestion} step={step} setStep={setStep} card={methodCard} isThinking={isThinking} setView={setStudentView} diagnosis={diagnosis} />}
         {studentView === 'summary' && <Summary diagnosis={diagnosis} card={methodCard} setView={setStudentView} />}
         {studentView === 'pricing' && <Pricing tutor={selectedTutor} setView={setStudentView} />}
       </section>

@@ -99,6 +99,10 @@ button {
 }
 
 .new-chat {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ppath-space-2);
   width: 100%;
   padding: var(--ppath-space-3) var(--ppath-space-4);
   border-radius: var(--ppath-radius-md);
@@ -131,6 +135,9 @@ button {
 }
 
 .session-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   padding: var(--ppath-space-3);
   border-radius: var(--ppath-radius-sm);
   color: var(--ppath-fg-2);
@@ -157,6 +164,10 @@ button {
 }
 
 .mode-nav button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--ppath-space-2);
   padding: var(--ppath-space-3);
   border-radius: var(--ppath-radius-sm);
   color: var(--ppath-fg-2);
@@ -246,6 +257,9 @@ button {
 .settings-card header strong { font-weight: 800; }
 
 .settings-card button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
   padding: var(--ppath-space-3);
   border: var(--ppath-border);
   border-radius: var(--ppath-radius-sm);
@@ -316,15 +330,13 @@ button {
 .welcome-nav {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   padding: var(--ppath-space-6) var(--ppath-space-12);
-}
-
-.nav-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--ppath-space-3);
-  font-weight: 800;
+  border-bottom: var(--ppath-border);
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(14px);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .welcome-hero {
@@ -410,10 +422,160 @@ button {
   display: block;
 }
 
+.brand-mark-img {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--ppath-radius-md);
+  display: block;
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--ppath-space-1);
+}
+
 button svg {
-  vertical-align: -3px;
-  margin-right: var(--ppath-space-1);
   flex-shrink: 0;
+}
+
+/* Welcome trust strip */
+.trust-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--ppath-space-4);
+  width: min(1120px, calc(100% - var(--ppath-space-12)));
+  margin: 0 auto var(--ppath-space-12);
+  padding: var(--ppath-space-6);
+  background: var(--ppath-card);
+  border: var(--ppath-border);
+  border-radius: var(--ppath-radius-2xl);
+  box-shadow: var(--ppath-shadow-sm);
+}
+
+.trust-strip > div {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--ppath-space-3);
+}
+
+.trust-strip svg {
+  flex-shrink: 0;
+  color: var(--ppath-ink-green-700);
+  margin-top: 2px;
+}
+
+.trust-strip strong {
+  display: block;
+  font-weight: 800;
+  color: var(--ppath-fg-1);
+  margin-bottom: 2px;
+}
+
+.trust-strip span {
+  display: block;
+  color: var(--ppath-fg-2);
+  font-size: var(--ppath-text-sm);
+  line-height: var(--ppath-leading-body);
+}
+
+.welcome-foot {
+  text-align: center;
+  padding: var(--ppath-space-6) 0 var(--ppath-space-8);
+  color: var(--ppath-fg-3);
+  font-size: var(--ppath-text-xs);
+}
+
+/* Confirm warning */
+.confirm-warning {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: var(--ppath-space-4);
+  padding: var(--ppath-space-4);
+  background: var(--ppath-status-review-bg);
+  border: 1px solid var(--ppath-amber-600);
+  border-radius: var(--ppath-radius-md);
+}
+
+.confirm-warning strong {
+  color: var(--ppath-amber-700);
+  font-weight: 800;
+}
+
+.confirm-warning span {
+  color: var(--ppath-fg-1);
+  font-size: var(--ppath-text-sm);
+  line-height: var(--ppath-leading-body);
+}
+
+/* Coach problem banner & step pill */
+.problem-banner {
+  margin-bottom: var(--ppath-space-4);
+  padding: var(--ppath-space-4);
+  background: var(--ppath-card-soft);
+  border: var(--ppath-border-soft);
+  border-radius: var(--ppath-radius-md);
+}
+
+.problem-banner span {
+  display: inline-block;
+  margin-bottom: var(--ppath-space-1);
+  color: var(--ppath-ink-green-500);
+  font-size: var(--ppath-text-xs);
+  font-weight: 700;
+  letter-spacing: var(--ppath-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.problem-banner p {
+  margin: 0;
+  color: var(--ppath-fg-1);
+  line-height: var(--ppath-leading-body);
+}
+
+.step-pill {
+  display: inline-block;
+  padding: var(--ppath-space-1) var(--ppath-space-3);
+  border-radius: var(--ppath-radius-pill);
+  background: var(--ppath-amber-50);
+  color: var(--ppath-amber-700);
+  font-size: var(--ppath-text-xs);
+  font-weight: 700;
+  letter-spacing: var(--ppath-tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+/* Status tags (method card / chatlog) */
+.status-tag {
+  display: inline-flex !important;
+  align-items: center;
+  padding: 3px var(--ppath-space-2) !important;
+  border-radius: var(--ppath-radius-pill);
+  font-size: var(--ppath-text-xs);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none !important;
+}
+
+.status-tag.approved {
+  background: var(--ppath-status-approved-bg);
+  color: var(--ppath-status-approved-fg);
+}
+
+.status-tag.needs_review,
+.status-tag.draft,
+.status-tag.pending,
+.status-tag.needs_fix {
+  background: var(--ppath-status-review-bg);
+  color: var(--ppath-status-review-fg);
+}
+
+.status-tag.disabled,
+.status-tag.rejected_example {
+  background: var(--ppath-status-disabled-bg);
+  color: var(--ppath-status-disabled-fg);
 }
 
 .dot-amber {
@@ -537,6 +699,11 @@ button svg {
   padding: var(--ppath-space-3) 0;
   border-top: 1px solid rgba(245, 239, 225, 0.12);
   align-items: start;
+}
+
+.parent-summary-card .ps-kv:first-of-type {
+  border-top: 1px solid rgba(245, 239, 225, 0.18);
+  margin-top: var(--ppath-space-2);
 }
 
 .parent-summary-card .k {
@@ -830,6 +997,10 @@ button svg {
 }
 
 .mini-subjects button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
   border: var(--ppath-border);
   border-radius: var(--ppath-radius-md);
   padding: var(--ppath-space-4);
@@ -875,6 +1046,8 @@ button svg {
   box-shadow: var(--ppath-shadow-sm);
   display: flex;
   flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
   gap: var(--ppath-space-3);
 }
 
@@ -1091,6 +1264,14 @@ button svg {
   font-weight: 900;
   font-size: var(--ppath-text-2xl);
   color: var(--ppath-ink-green-800);
+}
+
+.tutor-price-row strong small {
+  margin-left: var(--ppath-space-1);
+  color: var(--ppath-fg-3);
+  font-size: var(--ppath-text-sm);
+  font-family: var(--ppath-font-sans);
+  font-weight: 600;
 }
 
 .tutor-price-row span {
@@ -1635,6 +1816,11 @@ button:disabled {
   font-size: var(--ppath-text-xs);
 }
 
+.panel-title .status-tag {
+  font-size: var(--ppath-text-xs);
+  color: inherit;
+}
+
 .panel-title button {
   padding: var(--ppath-space-2) var(--ppath-space-3);
   border-radius: var(--ppath-radius-sm);
@@ -1751,6 +1937,9 @@ button:disabled {
 }
 
 .review-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: var(--ppath-space-2) var(--ppath-space-4);
   border: 0;
   border-radius: var(--ppath-radius-sm);
@@ -1822,6 +2011,19 @@ button:disabled {
   color: var(--ppath-fg-1);
 }
 
+.quality-head {
+  display: flex;
+  align-items: center;
+  gap: var(--ppath-space-2);
+  margin-bottom: var(--ppath-space-2);
+  color: var(--ppath-ink-green-700);
+}
+
+.quality-head strong {
+  margin: 0;
+  color: var(--ppath-fg-1);
+}
+
 .trust-grid p {
   color: var(--ppath-fg-2);
   line-height: var(--ppath-leading-body);
@@ -1879,7 +2081,7 @@ button:disabled {
 
 .chatlog-item footer button {
   margin-left: var(--ppath-space-1);
-  padding: var(--ppath-space-1) var(--ppath-space-3);
+  padding: var(--ppath-space-2) var(--ppath-space-3);
   border: 0;
   border-radius: var(--ppath-radius-sm);
   background: var(--ppath-card);
@@ -1887,6 +2089,13 @@ button:disabled {
   border: var(--ppath-border);
   font-weight: 700;
   font-size: var(--ppath-text-sm);
+  gap: 4px;
+}
+
+.chatlog-item footer > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ppath-space-1);
 }
 
 .chatlog-item footer button:hover { background: var(--ppath-ink-green-50); }
@@ -1965,7 +2174,46 @@ button:disabled {
     grid-template-columns: 1fr;
   }
 
+  .trust-strip {
+    grid-template-columns: 1fr 1fr;
+    padding: var(--ppath-space-4);
+  }
+
   .app-shell {
     grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .student-home,
+  .flow-page,
+  .selection-page,
+  .teacher-grid,
+  .coach-layout {
+    padding: var(--ppath-space-6);
+  }
+
+  .welcome-hero {
+    padding: var(--ppath-space-8) 0;
+  }
+
+  .welcome-nav {
+    padding: var(--ppath-space-5) var(--ppath-space-6);
+  }
+
+  .tutor-detail-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .trust-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .sidebar {
+    display: none;
   }
 }

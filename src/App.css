@@ -384,29 +384,24 @@ button {
 }
 
 .welcome-illustration {
-  display: grid;
-  gap: var(--ppath-space-4);
-  padding: var(--ppath-space-8);
+  padding: var(--ppath-space-6);
   border-radius: var(--ppath-radius-2xl);
   background: var(--ppath-card);
   border: var(--ppath-border);
   box-shadow: var(--ppath-shadow-lg);
 }
 
-.welcome-illustration div {
-  padding: var(--ppath-space-5);
+.welcome-illustration img {
+  width: 100%;
+  height: auto;
+  display: block;
   border-radius: var(--ppath-radius-xl);
-  background: var(--ppath-card-soft);
-  border: var(--ppath-border-soft);
-  font-weight: 800;
-  color: var(--ppath-fg-1);
 }
 
-.welcome-illustration span {
-  width: 2px;
-  height: 28px;
-  margin: 0 auto;
-  background: var(--ppath-line);
+.brand-logo {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--ppath-radius-md);
 }
 
 /* ─────────── Buttons ─────────── */
@@ -722,6 +717,21 @@ button {
   width: 72px;
   height: 72px;
   font-size: var(--ppath-text-xl);
+}
+
+.tutor-portrait {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--ppath-radius-pill);
+  background: var(--ppath-paper-deep);
+  border: var(--ppath-border);
+  object-fit: cover;
+  display: block;
+}
+
+.tutor-portrait.large {
+  width: 96px;
+  height: 96px;
 }
 
 .tutor-price {

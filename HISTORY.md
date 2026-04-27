@@ -290,6 +290,11 @@ LoginModal
    - 修复：修正 seed 错题 cardId；`findMethodCard()` 改为打分匹配，综合 topic/trigger/teacherMove/commonError/sampleQuestion/steps，并加入电磁、电场、动量、光学、热学、原子、振动等领域信号。错题入口也优先使用 `cardId` 找到的卡来写入 `diagnosis.type/stuck`。
    - 同时给 `.mistakes-page` 加自身滚动容器，解决错题本列表无法滚轮上下滚动。
 
+11. **七次修正：错题复做不再预填推荐方法卡**
+   - 产品原则更新：错题本不是“恢复上次会话”，也不是“直接跳到上次卡住的方法卡步骤”；它应该像第一次拍题一样，把旧题题干重新交给系统处理。
+   - 当前实现：`openMistake()` 只把 `m.questionText` 写入 `diagnosis.text`，重置 `step=0`，新建空 session，`diagnosis.type` 标记为「错题复做 · 重新诊断」，不再用旧 `cardId/stuckAtStep` 预填推荐卡和步骤。
+   - 后续理想实现：错题复做入口应走 `problem analyzer`：大模型/检索器重新判断题型、选择方法卡、生成本题引导路径、完成后生成新的 Summary 与错因反馈，并把一句错因摘要写回数据库。
+
 验证：本次修复后已跑 `npm run lint` 和 `npm run build`，均通过。Build 仍有大 chunk warning，属于后续代码分割/懒加载优化项，不阻塞演示。
 
 ---
@@ -322,6 +327,103 @@ LoginModal
 4. **prompt cache**：system + 方法卡库 digest 这两段固定，命中后 input 价格降一档
 5. **热门方法卡 + 常见问法做答案缓存**：同一道题反复有人问，命中直接返回审过的答案
 6. **Summary 改异步**：题做完异步生成，不阻塞 UI，可错峰 / 批量调用
+
+---
+
+## 9.1 后端 / 记忆 / 方法卡系统设想
+
+当前 demo 仍是前端 localStorage + JSON 种子数据。正式产品不是“把 DeepSeek fine-tune 成老师”，而是构建一个**老师方法卡驱动的 AI 解题教练系统**：
+
+```
+通用大模型（DeepSeek / Kimi / Qwen / GPT）
+  + 老师人设 prompt
+  + 老师审核过的方法卡
+  + 当前题目
+  + 当前短期对话
+  + 学生长期错题/薄弱点记忆
+  + 安全边界
+= 名师 AI 解题教练
+```
+
+### 方法卡存储
+
+每个老师约 50-100 张高质量方法卡，覆盖高考高频题型。正式阶段存数据库，不放前端 bundle：
+
+```
+method_cards:
+  id
+  teacher_id
+  subject
+  topic
+  title
+  trigger_text
+  scenario
+  key_insight
+  steps jsonb
+  common_mistakes jsonb
+  forbidden_phrases jsonb
+  examples jsonb
+  status              -- draft / needs_review / approved / disabled
+  version
+  embedding vector    -- 用 pgvector / 向量库做语义检索
+  created_at
+  updated_at
+```
+
+学生每次提问时，不把所有老师、所有方法卡都塞给模型；只在**该学生已购买的老师 + 当前学科 + approved 方法卡**里检索最相关的 3-5 张，再喂给模型。
+
+### 记忆分层
+
+1. **短期记忆**：当前题目的最近 6-10 轮对话，用于继续当前 Coach 会话。
+2. **中期记忆**：最近错题、薄弱知识点、错误次数，用于首页、错题本、推荐练习、周报。
+3. **长期记忆**：学生画像，如年级、目标考试、薄弱领域、偏好讲解方式、家长关注点。只在总结/推荐/规划时调用，不每轮都喂给模型。
+
+建议表结构：
+
+```
+users(id, phone, grade, province, exam_year, created_at)
+teachers(id, name, bio, style_prompt, avatar_url, revenue_share, status)
+subscriptions(id, user_id, teacher_id, plan, status, started_at, expires_at)
+method_cards(...)
+conversations(id, user_id, teacher_id, problem_text, matched_card_id, current_step, created_at, updated_at)
+messages(id, conversation_id, role, content, evaluation, created_at)
+mistakes(id, user_id, teacher_id, problem_text, matched_card_id, stuck_step, status, attempt_count, created_at, updated_at)
+student_memory(user_id, subject, weak_topics jsonb, recent_summary, long_term_profile, updated_at)
+```
+
+### 调用算法
+
+```
+answerStudent(userId, teacherId, problemText, userMessage):
+  1. 校验用户是否订阅 teacher
+  2. 读取老师 persona / style_prompt
+  3. 读取当前 conversation 最近几轮消息
+  4. 对 problemText 生成 embedding
+  5. 在 method_cards 中按 teacher_id + subject + approved 过滤后向量检索 top 3-5
+  6. 读取学生近期 weak topics / mistakes 摘要
+  7. 组装 prompt，调用 DeepSeek
+  8. 保存 message / token usage
+  9. 更新 current_step / mistake 状态
+  10. 返回老师式回答
+```
+
+### 老师训练流程
+
+老师不是手写 100 张卡，也不是一开始 fine-tune 模型。正确流程：
+
+```
+老师讲 30-50 道典型题（语音/视频/文字）
+  → 语音转文字
+  → AI 抽取候选方法卡
+  → 老师审核 / 修改 / 禁用话术
+  → 生成 embedding
+  → approved 后上线
+  → 学生真实使用
+  → 老师抽查回答，形成正例/反例
+  → 更新方法卡版本
+```
+
+Fine-tune 放在很后面：只有当有多个老师、几万条真实互动、足够多老师审核过的好/坏回答后，才考虑用来稳定语气或降低 prompt 成本。第一阶段核心资产不是模型权重，而是**老师方法卡 + 学生记忆 + 审核反馈闭环**。
 
 ---
 

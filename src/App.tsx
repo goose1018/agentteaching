@@ -522,13 +522,12 @@ function App() {
             mistakes={mistakes}
             setMistakes={setMistakes}
             openMistake={(m) => {
-              const replayCard = cards.find((c) => c.id === m.cardId) ?? findMethodCard(m.questionText, cards)
               setDiagnosis({
                 ...defaultDiagnosis,
                 text: m.questionText,
                 difficulty: m.difficulty + '等',
-                type: replayCard.topic,
-                stuck: [replayCard.commonError || '重新做题时先从题干判断题型和第一步'],
+                type: '错题复做 · 重新诊断',
+                stuck: ['这是一道旧错题，重新从题干判断题型和第一步'],
               })
               setStep(0)
               const session: Session = {

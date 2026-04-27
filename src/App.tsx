@@ -2713,10 +2713,20 @@ function App() {
     setDraft('')
     setIsThinking(true)
     const card = findMethodCard(text, cards)
-    const result = await generateAnswerWithProvider({ question: text, methodCard: card })
+    // 收集历史（最近 6 轮）传给 LLM 做上下文
+    const history = (activeSession?.messages ?? []).slice(-6).map((m) => ({
+      role: (m.role === 'teacher' ? 'teacher' : 'student') as 'teacher' | 'student',
+      content: m.content,
+    }))
+    const result = await generateAnswerWithProvider({
+      question: text,
+      methodCard: card,
+      problemText: diagnosis.text,
+      history,
+    })
     setAnswerReviews((current) => [createAnswerReview(text, result.answer, card), ...current].slice(0, 50))
-    // 基于学生消息内容 mock 评价（接通真 LLM 后由 AI 输出 evaluation 字段）
-    const evaluation = mockEvaluateAnswer(text, card)
+    // 优先用真 LLM 输出的 evaluation；mock fallback 时退化到本地关键词匹配
+    const evaluation = result.evaluation ?? mockEvaluateAnswer(text, card)
     setMessages((current) => [
       ...current,
       { id: crypto.randomUUID(), role: 'teacher', content: result.answer, time: fmt(), tags: [card.topic], evaluation },

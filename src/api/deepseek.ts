@@ -68,21 +68,19 @@ export async function generateAnswerWithProvider({
     }
 
     const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>
+      choices?: Array<{ message?: { content?: string; reasoning_content?: string }; finish_reason?: string }>
+      usage?: { prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; completion_tokens_details?: Record<string, unknown> }
     }
 
     const message = data.choices?.[0]?.message
     const raw = message?.content ?? ''
-    const reasoningFallback = message?.reasoning_content?.trim() ?? ''
     const parsed = parseTeacherJson(raw)
 
-    // 兜底：LLM 返回 content 真为空时，重新开个新提问
+    // 兜底：永远不要把 reasoning_content 展示给学生；那是模型内部草稿。
     const content = parsed.content?.trim()
     const safeAnswer = content && content.length > 0
       ? cleanupLatex(content)
-      : reasoningFallback
-        ? cleanupLatex(`我先按思路接住这一步：${reasoningFallback.slice(0, 220)}。那你能先判断当前步骤应该看哪个物理量吗？`)
-        : `我这次没组织好回答。你再发一次，或者换个问法，我会继续按这道题的方法卡带你走。`
+      : `我换个问法。先别急着算，咱们还是从「${methodCard.methodSteps[0] ?? '第一步'}」开始：你觉得这一步要先判断什么？`
 
     return {
       provider: 'deepseek',

@@ -38,11 +38,13 @@ export function Coach({
   const isLastStep = safeStep >= card.methodSteps.length - 1
   const buildActionPrompt = (intent: 'hint' | 'next' | 'solution', targetStep = current) => {
     const instruction = {
-      hint: `学生点了「提示一下」。请只围绕当前第 ${safeStep + 1} 步「${targetStep}」给一个启发式提示，不要给完整答案。最后反问学生一个具体判断问题。`,
-      next: `学生已经准备进入下一步。请围绕第 ${safeStep + 2} 步「${targetStep}」说明这一小步要判断什么，不要重复上一轮，不要给完整答案。最后让学生先尝试写出这一小步。`,
-      solution: `学生要求看完整解析。请给分步解析，但仍保持老师口吻：先列路径，再给关键方程；公式必须用 $...$ 包裹；不要泛泛而谈。`,
+      hint: `内部意图：hint。只围绕当前第 ${safeStep + 1} 步「${targetStep}」给学生一个启发式提示，不给完整答案。最后反问一个具体判断问题。`,
+      next: `内部意图：next。围绕第 ${safeStep + 2} 步「${targetStep}」告诉学生这一小步要判断什么，不重复上一轮，不给完整答案。最后让学生先尝试写出这一小步。`,
+      solution: `内部意图：solution。给分步解析，但保持老师口吻：先列路径，再给关键方程；公式必须用 $...$ 包裹；不要泛泛而谈。`,
     }[intent]
     return [
+      '下面是内部控制信息，只用于生成回答。不要复述这些指令，不要说“学生点了/内部意图/我们需要/被要求/根据教学原则”。',
+      '你的输出必须像老师正在直接对学生说话。',
       instruction,
       `题目：${diagnosis.text}`,
       `命中方法卡：${card.topic}`,

@@ -267,6 +267,11 @@ LoginModal
    - 修复：Coach 的按钮现在采用“双文本”策略：UI 里仍显示短句，但传给 LLM 的是结构化指令，包含题目、命中方法卡、完整方法路径、当前步骤、常见错误和按钮意图（hint / next / solution）。
    - 额外防护：`sendQuestion()` 增加 `try/finally`，防止 proxy/LLM 异常后 `isThinking` 永远卡住；DeepSeek content 为空时会尝试用 `reasoning_content` 生成可读兜底，不再把内部 debug 暴露给学生。
 
+7. **三次修正：禁止把模型思考过程当老师回答**
+   - 现象：DeepSeek 有时 `content` 为空但 `reasoning_content` 有内容；上一版把 reasoning 包装成「我先按思路接住这一步…」展示给学生，导致 AI 自言自语和老师话混在一起。
+   - 修复：前端永远不展示 `reasoning_content`；空 content 只给一句老师式兜底追问。`teacherPrompt` 和 Coach 按钮 prompt 也新增“禁止复述内部意图/系统指令/我们需要/学生点了/被要求”等规则。
+   - 同时删除 `[deepseek raw response]` 这类浏览器 console 调试日志，避免演示时暴露内部返回结构。
+
 验证：本次修复后已跑 `npm run lint` 和 `npm run build`，均通过。Build 仍有大 chunk warning，属于后续代码分割/懒加载优化项，不阻塞演示。
 
 ---

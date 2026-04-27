@@ -15,13 +15,14 @@ import { TutorDetail } from './components/student/TutorDetail'
 import { Confirm } from './components/student/Confirm'
 import { MistakesPage } from './components/student/MistakesPage'
 import { NewUserHome } from './components/student/NewUserHome'
-import { defaultDiagnosis, subjects } from './data/defaults'
+import { Settings } from './components/student/Settings'
+import { SubjectSelect } from './components/student/SubjectSelect'
+import { defaultDiagnosis } from './data/defaults'
 import {
   CheckCircle2,
   ClipboardCheck,
   Eye,
   Flag,
-  GraduationCap,
   Image as ImageIcon,
   Layers,
   ListChecks,
@@ -231,28 +232,6 @@ function loadInitialMethodCards(): MethodCard[] {
 
 
 // ---- 方法卡库（公开页，可被搜索引擎收录）
-function Settings({ close, setStudent, resetDemo, switchToNew, switchToPaid, logout }: {
-  close: () => void
-  setStudent: (v: StudentView) => void
-  resetDemo: () => void
-  switchToNew: () => void
-  switchToPaid: () => void
-  logout: () => void
-}) {
-  return (
-    <div className="settings-modal" onClick={close}>
-      <div className="settings-card" onClick={(e) => e.stopPropagation()}>
-        <header><strong>设置</strong><button className="close" onClick={close}>关闭</button></header>
-        <button onClick={() => { close(); setStudent('teachers') }}><GraduationCap size={14} /> 切换老师</button>
-        <div className="settings-section-title">演示模式</div>
-        <button onClick={() => { close(); switchToNew() }}><Eye size={14} /> 切换为新用户演示</button>
-        <button onClick={() => { close(); switchToPaid() }}><Eye size={14} /> 切换为老用户演示</button>
-        <button onClick={() => { close(); resetDemo() }}><Flag size={14} /> 重置演示数据</button>
-        <button className="danger" onClick={() => { close(); logout() }}><Flag size={14} /> 退出登录</button>
-      </div>
-    </div>
-  )
-}
 
 // Mock 学生回答评价（仅 fallback 用；真实评价由 LLM 输出）
 // 默认 null —— 学生没真正回答具体问题时不评价
@@ -273,7 +252,6 @@ function mockEvaluateAnswer(answer: string, card: MethodCard): Evaluation {
 }
 
 
-function SubjectSelect({selected,setSelected,setView}:{selected:string;setSelected:(s:string)=>void;setView:(v:StudentView)=>void}){return <section className="selection-page"><p className="eyebrow">选择科目</p><h1>今天想练哪一科？</h1><div className="subject-grid">{subjects.map(s=><button className={selected===s.name?'active':''} key={s.name} onClick={()=>{setSelected(s.name);setView('teachers')}}><span className="subject-icon">{s.icon}</span><strong>{s.name}</strong><span>{s.status}</span></button>)}</div></section>}
 // Capture / knowledgeMastery / last7DaysBars 已迁移到 components/student/Capture.tsx + data/defaults.ts
 
 // Capture component moved to components/student/Capture.tsx

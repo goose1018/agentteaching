@@ -3890,6 +3890,24 @@
   background: var(--ppath-ink-green-100, #d8e4d3);
   transform: scale(1.01);
 }
+
+.paste-hint {
+  margin: 0 0 12px;
+  padding: 12px 16px;
+  background: var(--ppath-amber-100, #fcefd6);
+  border: 1px solid var(--ppath-amber-700);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--ppath-amber-700);
+  line-height: 1.6;
+}
+
+.send-teacher-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
 .dropzone-stage .icon-wrap {
   flex-shrink: 0;
   width: 56px; height: 56px;

@@ -82,9 +82,15 @@ export async function generateAnswerWithProvider({
     const raw = data.choices?.[0]?.message?.content ?? ''
     const parsed = parseTeacherJson(raw)
 
+    // 兜底：LLM 返回 content 为空时，给一句安全的接住话
+    const content = parsed.content?.trim()
+    const safeAnswer = content && content.length > 5
+      ? cleanupLatex(content)
+      : `我刚没接住你这句话。能再说具体点吗？比如你卡在「${methodCard.methodSteps[0] ?? '哪一步'}」这一步，还是哪个判断不确定？`
+
     return {
       provider: 'deepseek',
-      answer: parsed.content || buildMockAnswer(question, methodCard),
+      answer: safeAnswer,
       evaluation: parsed.evaluation,
     }
   } catch (error) {
@@ -100,6 +106,27 @@ export async function generateAnswerWithProvider({
 interface TeacherJson {
   content: string
   evaluation: Evaluation
+}
+
+// LaTeX 后处理：修复 LLM 漏 $ 包裹的常见问题
+function cleanupLatex(text: string): string {
+  // 1. 移除 markdown 加粗 / 斜体 / 标题标记
+  let out = text
+    .replace(/\*\*(.+?)\*\*/g, '$1')   // **xx** -> xx
+    .replace(/__(.+?)__/g, '$1')       // __xx__ -> xx
+    .replace(/^#+\s*/gm, '')           // # 标题
+  // 2. 检查 $ 数量是否成对
+  const dollars = (out.match(/\$/g) || []).length
+  if (dollars % 2 !== 0) {
+    // 奇数个 $ — 配对失败，移除孤立的 $ 避免 raw 显示
+    out = out.replace(/\$/g, '')
+  }
+  // 3. 兜底：如果完全没有 $ 但出现了裸 LaTeX 命令（\text \frac 等），用 $ 简单包裹整段
+  if (!out.includes('$') && /\\(text|frac|sqrt|sin|cos|tan)\b/.test(out)) {
+    // 整段裹住可能太粗暴；换思路：把每个 \xxx{...} 用 $ 包起来
+    out = out.replace(/(\\(?:text|frac|sqrt|sin|cos|tan|theta|alpha|beta|gamma|Delta)[^\s,，。；;]*\{[^}]*\}|\\(?:theta|alpha|beta|gamma|Delta|sin|cos|tan|sqrt))/g, '$$$1$$')
+  }
+  return out
 }
 
 function parseTeacherJson(raw: string): TeacherJson {

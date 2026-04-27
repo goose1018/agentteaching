@@ -28,7 +28,7 @@ import {
   UsersRound,
   Workflow,
 } from 'lucide-react'
-import { createAnswerReview, findMethodCard, recognizeProblemImage } from './aiTasks'
+import { createAnswerReview, findMethodCard } from './aiTasks'
 import { generateAnswerWithProvider, generateStudySummary, type StudySummaryResult } from './aiProvider'
 import {
   ANSWER_REVIEW_STORAGE_KEY,
@@ -1155,7 +1155,7 @@ function timeAgo(iso: string): string {
   return new Date(iso).toLocaleDateString('zh-CN')
 }
 
-function StudentHome({ tutor, setView }: { tutor: Tutor; setView: (v: StudentView) => void }) {
+function StudentHome({ tutor, setView, onStartNew }: { tutor: Tutor; setView: (v: StudentView) => void; onStartNew: () => void }) {
   return (
     <section className="student-home">
       <header className="page-head">
@@ -1168,7 +1168,7 @@ function StudentHome({ tutor, setView }: { tutor: Tutor; setView: (v: StudentVie
           <p className="label">本周{tutor.name}陪你练了</p>
           <p className="stat">12<small>道题</small></p>
           <p className="desc">其中 3 道你独立想出了思路</p>
-          <button className="cta-light" onClick={() => setView('capture')}>
+          <button className="cta-light" onClick={onStartNew}>
             <Camera size={14} /> 拍下一道题
           </button>
         </div>
@@ -1423,24 +1423,34 @@ function Capture({ setDiagnosis, setView, tutor, userTier, freeAttemptsLeft }: {
   const [scanStep, setScanStep] = useState<0 | 1 | 2 | 3 | 4>(0) // 0 = closed, 1-4 = step
 
   const [dragOver, setDragOver] = useState(false)
-  const startScan = (file?: File) => {
-    if (file) {
-      // 真实文件上传 — 把文件名作为题目占位（接 vision API 后改成真识别）
-      setPasted(`从图片识别：${file.name}`)
+  const [uploadedFileName, setUploadedFileName] = useState<string>('')
+  const [showImageHint, setShowImageHint] = useState(false)
+
+  const startScan = () => {
+    if (!pasted.trim()) {
+      // 没文字内容不能开始 — 提示用户必须输入题目
+      setShowImageHint(true)
+      return
     }
+    setShowImageHint(false)
     setScanStep(1)
   }
+
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setDragOver(false)
     const f = e.dataTransfer.files?.[0]
     if (f && f.type.startsWith('image/')) {
-      startScan(f)
+      setUploadedFileName(f.name)
+      setShowImageHint(true)
     }
   }
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
-    if (f) startScan(f)
+    if (f) {
+      setUploadedFileName(f.name)
+      setShowImageHint(true)
+    }
   }
 
   // 自动推进扫描进度
@@ -1448,9 +1458,8 @@ function Capture({ setDiagnosis, setView, tutor, userTier, freeAttemptsLeft }: {
     if (scanStep === 0) return
     if (scanStep === 4) {
       // 完成 — 写入 diagnosis 直接跳 coach（去掉冗余 confirm 页）
-      const finalText = pasted || recognizeProblemImage('physics-demo.png').text
-      const r = recognizeProblemImage('physics-demo.png')
-      setDiagnosis({ ...defaultDiagnosis, text: finalText, confidence: r.confidence })
+      // 用户必须有 pasted 内容（startScan 已校验），不再 fallback 到固定 mock 文本
+      setDiagnosis({ ...defaultDiagnosis, text: pasted, confidence: 0.95 })
       const t = window.setTimeout(() => {
         setScanStep(0)
         setView('coach')
@@ -1496,35 +1505,38 @@ function Capture({ setDiagnosis, setView, tutor, userTier, freeAttemptsLeft }: {
                 <Camera size={24} />
               </div>
               <div className="copy">
-                <h3>{dragOver ? '松开上传' : '把题目拖到这里'}</h3>
-                <p>支持拖拽图片 / 点击此区域选择 · 单题识别更准</p>
+                <h3>{dragOver ? '松开上传' : uploadedFileName ? `已上传：${uploadedFileName}` : '把题目拖到这里'}</h3>
+                <p>{uploadedFileName
+                  ? '⚠️ 演示版尚未接入图像识别。请在下方文字框补充题目内容，AI 才能讲解。'
+                  : '支持拖拽图片 / 点击此区域选择 · 单题识别更准'}
+                </p>
               </div>
               <div className="action-row" onClick={(e) => e.stopPropagation()}>
-                <button
-                  type="button"
-                  className="seg-btn primary"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); startScan() }}
-                >
-                  <Camera size={14} /> 演示拍照
-                </button>
                 <button
                   type="button"
                   className="seg-btn ghost"
                   onClick={(e) => { e.preventDefault(); e.stopPropagation(); document.getElementById('capture-file')?.click() }}
                 >
-                  <ImageIcon size={14} /> 从相册选择
+                  <ImageIcon size={14} /> 选择图片
                 </button>
               </div>
             </div>
             <input id="capture-file" type="file" accept="image/*" onChange={handleFileSelect} hidden />
 
-            <div className="or-divider"><span>或者</span></div>
+            <div className="or-divider"><span>请输入题目文字</span></div>
+
+            {showImageHint && !pasted.trim() && (
+              <div className="paste-hint">
+                ⚠️ 演示模式：图像识别还在接入中。请把题目文字粘贴或手打到下方框里，X 老师才能针对真题讲解。
+              </div>
+            )}
 
             <textarea
               className="paste-input"
-              placeholder="如果不方便拍照，把题目文字粘贴在这里也可以 ——「一物体从 H 高处自由落下…」"
+              placeholder="把题目文字粘贴在这里 ——「在光滑水平面上，长 L=0.5m 的导体棒在磁感应强度 B=0.2T 的匀强磁场中以 v=2m/s 切割磁感线…」"
               value={pasted}
-              onChange={(e) => setPasted(e.target.value)}
+              onChange={(e) => { setPasted(e.target.value); if (e.target.value.trim()) setShowImageHint(false) }}
+              rows={4}
             />
 
             <div className="stage-footer">
@@ -1533,7 +1545,8 @@ function Capture({ setDiagnosis, setView, tutor, userTier, freeAttemptsLeft }: {
                 type="button"
                 className="send-teacher-btn"
                 onClick={() => startScan()}
-                disabled={false}
+                disabled={!pasted.trim()}
+                title={!pasted.trim() ? '先输入题目文字' : '发给老师'}
               >
                 发给老师
                 <ArrowRight size={14} />
@@ -1665,11 +1678,10 @@ function Capture({ setDiagnosis, setView, tutor, userTier, freeAttemptsLeft }: {
               <span className="corner bl"></span>
               <span className="corner br"></span>
               <div className="scan-doc">
-                <div className="scan-q">2024 高考真题（甲卷）· 17 题</div>
+                <div className="scan-q">{uploadedFileName ? `已上传图片：${uploadedFileName}` : '题目内容'}</div>
                 <div className="scan-body">
-                  如图所示，质量为 m 的物体从高 h 处沿光滑斜面下滑，斜面倾角为 θ，物体到达底端时的速度大小为 v ……
+                  {pasted.slice(0, 200) || '...'}
                 </div>
-                <div className="scan-formula">v² = 2gh sinθ</div>
               </div>
               <div className="scan-line" />
             </div>
@@ -1731,7 +1743,7 @@ function Confirm({ diagnosis, setDiagnosis, setView }: { diagnosis: Diagnosis; s
   )
 }
 
-function Coach({ tutor, session, draft, setDraft, send, step, setStep, card, isThinking, setView, diagnosis, onComplete }: { tutor: Tutor; session: Session; draft: string; setDraft: (s: string) => void; send: (s: string) => void; step: number; setStep: (n: number) => void; card: MethodCard; isThinking: boolean; setView: (v: StudentView) => void; diagnosis: Diagnosis; onComplete: () => void }) {
+function Coach({ tutor, session, draft, setDraft, send, step, setStep, card, isThinking, diagnosis, onComplete, onSwitchProblem }: { tutor: Tutor; session: Session; draft: string; setDraft: (s: string) => void; send: (s: string) => void; step: number; setStep: (n: number) => void; card: MethodCard; isThinking: boolean; diagnosis: Diagnosis; onComplete: () => void; onSwitchProblem: () => void }) {
   const safeStep = Math.min(step, card.methodSteps.length - 1)
   const current = card.methodSteps[safeStep]
   const isLastStep = safeStep >= card.methodSteps.length - 1
@@ -1829,7 +1841,7 @@ function Coach({ tutor, session, draft, setDraft, send, step, setStep, card, isT
           className="coach-mini-btn"
           type="button"
           aria-label="拍新题"
-          onClick={() => setView('capture')}
+          onClick={onSwitchProblem}
           title="换一道新题"
         >
           <Camera size={18} />
@@ -2874,12 +2886,23 @@ function App() {
     setStudentView('home')
   }
 
-  // 新用户尝试开新一道题：检查免费额度
+  // 新用户尝试开新一道题：检查免费额度 + 重置 session（一道题一个对话框）
   const tryStartCapture = () => {
     if (userTier === 'new' && freeAttemptsLeft <= 0) {
       setShowPaywall(true)
       return
     }
+    // 创建全新 session，避免历史对话污染新题目
+    const session: Session = {
+      id: crypto.randomUUID(),
+      title: '新的提问',
+      messages: [{ ...firstMessage, id: crypto.randomUUID(), time: fmt() }],
+    }
+    setSessions((current) => [session, ...current])
+    setActiveSessionId(session.id)
+    // 清空之前的题目
+    setDiagnosis(defaultDiagnosis)
+    setStep(0)
     setStudentView('capture')
   }
 
@@ -3050,7 +3073,7 @@ function App() {
         />
       )}
       <section className="workspace">
-        {studentView === 'home' && <StudentHome tutor={selectedTutor} setView={setStudentView} />}
+        {studentView === 'home' && <StudentHome tutor={selectedTutor} setView={setStudentView} onStartNew={tryStartCapture} />}
         {studentView === 'newUserHome' && (
           <NewUserHome
             tutor={liuTutor}
@@ -3076,7 +3099,7 @@ function App() {
             setStep={setStep}
             card={methodCard}
             isThinking={isThinking}
-            setView={setStudentView}
+            onSwitchProblem={tryStartCapture}
             diagnosis={diagnosis}
             onComplete={() => {
               if (userTier === 'paid') {

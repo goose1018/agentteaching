@@ -10,6 +10,7 @@ import { Pricing } from './components/student/Pricing'
 import { StudentHome } from './components/student/StudentHome'
 import { TeacherList } from './components/student/TeacherList'
 import { TutorDetail } from './components/student/TutorDetail'
+import { Confirm } from './components/student/Confirm'
 import { defaultDiagnosis, subjects } from './data/defaults'
 import {
   ArrowRight,
@@ -943,38 +944,6 @@ function SubjectSelect({selected,setSelected,setView}:{selected:string;setSelect
 // Capture / knowledgeMastery / last7DaysBars 已迁移到 components/student/Capture.tsx + data/defaults.ts
 
 // Capture component moved to components/student/Capture.tsx
-function Confirm({ diagnosis, setDiagnosis, setView }: { diagnosis: Diagnosis; setDiagnosis: (d: Diagnosis) => void; setView: (v: StudentView) => void }) {
-  const lowConf = diagnosis.confidence < 0.8
-  return (
-    <section className="flow-page">
-      <p className="eyebrow">题干确认</p>
-      <h1>我识别到的题目</h1>
-      <div className="flow-card">
-        {lowConf && (
-          <div className="confirm-warning">
-            <strong>识别置信度只有 {Math.round(diagnosis.confidence * 100)}%</strong>
-            <span>请先核对题干和数字，必要时重新拍一张更清晰的照片再继续。</span>
-          </div>
-        )}
-        <div className="confirm-grid">
-          <span>学科：{diagnosis.subject}</span>
-          <span>题型：{diagnosis.type}</span>
-          <span>难度：{diagnosis.difficulty}</span>
-          <span>置信度：{Math.round(diagnosis.confidence * 100)}%</span>
-        </div>
-        <label>
-          题干
-          <textarea value={diagnosis.text} onChange={(e) => setDiagnosis({ ...diagnosis, text: e.target.value })} />
-        </label>
-        <button onClick={() => setView('coach')}>
-          <CheckCircle2 size={16} /> 识别正确，开始陪练
-        </button>
-        <button className="ghost"><PencilLine size={16} /> 有错误，我来修改</button>
-      </div>
-    </section>
-  )
-}
-
 
 // ---- 错题本页面（P4 + P7）
 type MistakeFilter = 'all' | 'open' | 'reviewing' | 'mastered'

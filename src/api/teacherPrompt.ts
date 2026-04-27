@@ -1,5 +1,5 @@
-import type { MethodCard } from './domain'
-import seedMethodCards from './seedMethodCards.json'
+import type { MethodCard } from '../domain'
+import seedMethodCards from '../seedMethodCards.json'
 
 export interface TeacherPersona {
   id: string

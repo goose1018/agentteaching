@@ -1,5 +1,5 @@
-import { buildSystemPrompt, buildContextMessage } from './teacherPersona'
-import type { MethodCard } from './domain'
+import { buildSystemPrompt, buildContextMessage } from './teacherPrompt'
+import type { MethodCard } from '../domain'
 
 export type Evaluation = 'correct' | 'partial' | 'wrong' | null
 

@@ -198,6 +198,7 @@ LoginModal
 | **CORS proxy + 拖拽 + Capture 滚动** | 068892e | vite proxy / 真拖拽 / 删冗余 confirm / 修步骤一致性 |
 | **常老师 → X 老师** | d9d21b0 | 一道题一对话框（重置 session）+ LaTeX 后处理 + 强制粘贴文字 |
 | **Coach 按钮真接 LLM** | 6c147af | 提示一下/下一步/看完整解析 真发请求 + 过滤 firstMessage + max_tokens 1500 |
+| **Coach 可信度修复** | 本次提交 | 固定每道题的 methodCard，不再用「提示一下/下一步」短文本重新匹配；删除默认开场和自动 kickoff；方法卡库/详情页恢复滚动；方法卡库接入 KaTeX；DeepSeek 空内容兜底不再暴露 debug raw；补 `{1}{2}`、`cdot` 等常见残缺公式清洗 |
 
 ---
 
@@ -223,15 +224,45 @@ LoginModal
 
 ### 🟡 中等
 - **教师端 100% mock** —— UploadCoursewareView 假装解析 PDF 实际只看文件名
-- **方法卡步骤是匹配的不是 LLM 现场生成的** —— `findMethodCard` 用关键词匹配
+- **方法卡步骤是关键词匹配，不是 LLM 现场生成的** —— `findMethodCard` 仍是轻量关键词命中；已修复 Coach 内「每轮按钮短文本重新匹配导致电场题 fallback 到牛二」的问题：现在进入一题后，回答/提示/下一步都按 `diagnosis.text` 对应的本题方法卡走。
 - **错题本「再做一遍」语义不清** —— 跳到 coach 时 step 直接定位卡点，不是从头开始
 - **Welcome carousel nudge 用 sessionStorage** —— 关浏览器就丢，会重复演
+- **LaTeX 清洗只能覆盖高频坏格式** —— `Tex` 只渲染 `$...$`；已让方法卡库也走 `Tex`，并补 `{1}{2}` → `\frac{1}{2}`、`cdot` → `\cdot` 等常见兜底。但如果模型吐出完全自然语言公式（如 `1/2 m v ^ 2`），仍需要 prompt/后端清洗继续增强。
 
 ### 🟢 低
 - 无 mobile 响应式审查（部分组件 < 480px 可能崩）
 - 无 loading / error / empty states（很多页面假设数据存在）
 - 无 i18n（写死中文）
 - 无 a11y 全面审查
+
+---
+
+## 8.1 2026-04-27 Coach/方法卡可信度 bug 修复记录
+
+这次修的是一组真实演示路径里暴露出来的问题，不是单纯 UI 小修：
+
+1. **电场题被讲成牛二/力学题**
+   - 根因：`sendQuestion()` 每一轮都用用户本轮输入 `text` 重新 `findMethodCard(text, cards)`。
+   - 结果：按钮文案「提示一下」「下一步」匹配不到电场题，fallback 到 `searchableCards[0]`，通常就是旧 seed 的牛顿第二定律卡，导致 Coach 与 Summary 都围绕错卡生成。
+   - 修复：Coach 内后续对话统一用 `findMethodCard(diagnosis.text, cards)`，即**方法卡只由本题题干决定**；按钮/学生短回复不再重新决定题型。
+
+2. **默认 placeholder 和自动开场干扰真实对话**
+   - 根因：初始 session 永远带 `firstMessage`，进入 Coach 后又有自动 `kickoffCoach()`，导致默认废话和真实开场混杂。
+   - 修复：删除 `firstMessage` seed、删除自动 kickoff effect，新 session 初始 `messages: []`。学生进入 Coach 后不再自动塞一条“把题发上来”的旧文案。
+
+3. **方法卡库无法滚动**
+   - 根因：页面在 `.workspace { height: 100vh; overflow: hidden; }` 里，但 `.method-library` / `.method-detail-page` 自己没有滚动容器。
+   - 修复：给这两个页面加 `flex: 1; min-height: 0; overflow-y: auto;`，避免内容被 workspace 截断。
+
+4. **方法卡库公式不渲染**
+   - 根因：`MethodCardDetail` 已用 `<Tex>`，但 `MethodLibrary` 列表里仍直接渲染 `{card.teacherMove}`。
+   - 修复：`MethodLibrary` 列表摘要改为 `<Tex>{card.teacherMove}</Tex>`，列表页也走 KaTeX 渲染。
+
+5. **DeepSeek 空 content / 残缺公式暴露给用户**
+   - 根因：API 只读 `message.content`，且空 content 兜底文案带 `debug: raw=""`；同时清洗逻辑对 `{1}{2}mv^2`、`cdot`、代码块 JSON 等格式不够稳。
+   - 修复：空内容改成用户可读兜底，不再显示 debug；JSON 解析支持 ```json fence；LaTeX cleanup 增强 `{1}{2}`、`frac{1}{2}`、`cdot`、裸 `\frac / \sqrt / \sin` 等常见格式。
+
+验证：本次修复后已跑 `npm run lint` 和 `npm run build`，均通过。Build 仍有大 chunk warning，属于后续代码分割/懒加载优化项，不阻塞演示。
 
 ---
 

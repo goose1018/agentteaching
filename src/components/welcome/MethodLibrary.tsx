@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import type { MethodCard } from '../../domain'
 import seedMethodCards from '../../seedMethodCards.json'
+import { Tex } from '../shared/Tex'
 
 const seedTopicOf = (() => {
   const seedRows = seedMethodCards as Array<{ id: string; topic: string }>
@@ -42,7 +43,7 @@ export function MethodLibrary({ cards, openCard, back }: MethodLibraryProps) {
             {list.map((card) => (
               <button className="library-item" key={card.id} type="button" onClick={() => openCard(card.id)}>
                 <strong>{card.topic}</strong>
-                <p>{card.teacherMove}</p>
+                <p><Tex>{card.teacherMove}</Tex></p>
                 <span className="library-cta">查看方法 →</span>
               </button>
             ))}

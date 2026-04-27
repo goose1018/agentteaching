@@ -1393,6 +1393,10 @@
 
 /* ---- 方法卡库 ---- */
 .method-library {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  width: min(1080px, 100%);
   max-width: 1080px;
   margin: 0 auto;
   padding: 0 clamp(24px, 5vw, 64px) 64px;
@@ -1489,6 +1493,10 @@
 
 /* ---- 方法卡详情页 ---- */
 .method-detail-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  width: min(760px, 100%);
   max-width: 760px;
   margin: 0 auto;
   padding: 0 clamp(24px, 5vw, 48px) 64px;

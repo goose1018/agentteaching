@@ -68,7 +68,7 @@ export async function generateAnswerWithProvider({
     }
 
     const data = (await response.json()) as {
-      choices?: Array<{ message?: { content?: string } }>
+      choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>
     }
 
     const raw = data.choices?.[0]?.message?.content ?? ''
@@ -78,7 +78,7 @@ export async function generateAnswerWithProvider({
     const content = parsed.content?.trim()
     const safeAnswer = content && content.length > 0
       ? cleanupLatex(content)
-      : `（演示版）AI 没返回内容。你可以再发一次或换个问法。debug: raw="${raw.slice(0, 100)}"`
+      : `我这次没组织好回答。你再发一次，或者换个问法，我会继续按这道题的方法卡带你走。`
 
     return {
       provider: 'deepseek',
@@ -107,23 +107,35 @@ function cleanupLatex(text: string): string {
     .replace(/\*\*(.+?)\*\*/g, '$1')   // **xx** -> xx
     .replace(/__(.+?)__/g, '$1')       // __xx__ -> xx
     .replace(/^#+\s*/gm, '')           // # 标题
+    .replace(/\{1\}\{2\}/g, '\\frac{1}{2}')
+    .replace(/\bfrac\{1\}\{2\}/g, '\\frac{1}{2}')
+    .replace(/\bcdot\b/g, '\\cdot')
   // 2. 检查 $ 数量是否成对
   const dollars = (out.match(/\$/g) || []).length
   if (dollars % 2 !== 0) {
     // 奇数个 $ — 配对失败，移除孤立的 $ 避免 raw 显示
     out = out.replace(/\$/g, '')
   }
-  // 3. 兜底：如果完全没有 $ 但出现了裸 LaTeX 命令（\text \frac 等），用 $ 简单包裹整段
+  // 3. 兜底：如果完全没有 $ 但出现了裸 LaTeX 命令，包住最常见的公式片段。
   if (!out.includes('$') && /\\(text|frac|sqrt|sin|cos|tan)\b/.test(out)) {
-    // 整段裹住可能太粗暴；换思路：把每个 \xxx{...} 用 $ 包起来
-    out = out.replace(/(\\(?:text|frac|sqrt|sin|cos|tan|theta|alpha|beta|gamma|Delta)[^\s,，。；;]*\{[^}]*\}|\\(?:theta|alpha|beta|gamma|Delta|sin|cos|tan|sqrt))/g, '$$$1$$')
+    out = out.replace(
+      /(\\frac\{[^}]+\}\{[^}]+\}(?:\s*\\cdot\s*)?(?:[A-Za-z0-9_^{}+\-*/\\]+)?|[A-Za-z](?:_[A-Za-z0-9{}]+)?\s*=\s*[^，。；;\n]+|\\(?:sqrt|sin|cos|tan)\{?[^，。；;\s]*\}?)/g,
+      (_match) => `$${_match.trim()}$`,
+    )
   }
   return out
 }
 
 function parseTeacherJson(raw: string): TeacherJson {
   try {
-    const obj = JSON.parse(raw) as { content?: string; evaluation?: string }
+    const cleaned = raw
+      .trim()
+      .replace(/^```(?:json)?\s*/i, '')
+      .replace(/\s*```$/i, '')
+    const jsonText = cleaned.startsWith('{')
+      ? cleaned
+      : cleaned.slice(cleaned.indexOf('{'), cleaned.lastIndexOf('}') + 1)
+    const obj = JSON.parse(jsonText) as { content?: string; evaluation?: string }
     const evaluation = (['correct', 'partial', 'wrong'].includes(obj.evaluation ?? '')
       ? obj.evaluation
       : null) as Evaluation

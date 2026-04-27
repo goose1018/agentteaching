@@ -59,9 +59,6 @@ import './App.css'
 import './App.patch.css'
 
 
-// Coach 第一条 placeholder 消息 — 进 coach 时如果只有这条，会被 AI 真开场覆盖
-const firstMessage: Message = { id:'m1', role:'teacher', content:'把题发上来。先别急着找公式，物理题先看对象、过程和条件；这三样看清楚，公式自然会出来。', time:'09:41', tags:['高中物理','解题路径'] }
-
 const fmt = () => new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(new Date())
 
 function App() {
@@ -128,7 +125,7 @@ function App() {
     }
   })
   const [sessions, setSessions] = useState<Session[]>([
-    { id: 's1', title: '动量守恒判断', messages: [firstMessage] },
+    { id: 's1', title: '新的提问', messages: [] },
   ])
   const [activeSessionId, setActiveSessionId] = useState('s1')
 
@@ -209,7 +206,7 @@ function App() {
     const session: Session = {
       id: crypto.randomUUID(),
       title: '新的提问',
-      messages: [{ ...firstMessage, id: crypto.randomUUID(), time: fmt() }],
+      messages: [],
     }
     setSessions((current) => [session, ...current])
     setActiveSessionId(session.id)
@@ -227,12 +224,10 @@ function App() {
     setMessages((current) => [...current, studentMessage])
     setDraft('')
     setIsThinking(true)
-    const card = findMethodCard(text, cards)
-    // 过滤掉占位 firstMessage（避免连续两条 assistant 让 LLM 困惑）
-    const realMessages = (activeSession?.messages ?? []).filter(
-      (m) => m.content !== firstMessage.content
-    )
-    const history = realMessages.slice(-6).map((m) => ({
+    // 本题的方法卡只由题干决定。后续「提示一下 / 下一步」这类短按钮文案不能重新匹配，
+    // 否则会 fallback 到第一张卡，造成电场题按牛二讲。
+    const card = findMethodCard(diagnosis.text, cards)
+    const history = (activeSession?.messages ?? []).slice(-6).map((m) => ({
       role: (m.role === 'teacher' ? 'teacher' : 'student') as 'teacher' | 'student',
       content: m.content,
     }))
@@ -251,37 +246,6 @@ function App() {
     ])
     setIsThinking(false)
   }
-
-  // Coach 开场：第一次进 coach 时让 AI 基于题目主动给出第一句引导
-  const kickoffCoach = async () => {
-    setIsThinking(true)
-    const card = findMethodCard(diagnosis.text, cards)
-    const result = await getAiClient().generateAnswer({
-      question: `[系统启动] 学生刚拍了这道题：${diagnosis.text}\n请按你的方法卡，主动开场——先点出题型，然后明确告诉学生第一步要做什么、要思考什么具体问题。一定要以反问结尾。`,
-      methodCard: card,
-      problemText: diagnosis.text,
-      history: [],
-    })
-    setMessages((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: 'teacher', content: result.answer, time: fmt(), tags: [card.topic], evaluation: null },
-    ])
-    setIsThinking(false)
-  }
-
-  // 进 coach 时如果只有默认开场消息，自动让 AI 基于题目重新开场
-  useEffect(() => {
-    if (studentView !== 'coach') return
-    if (!activeSession) return
-    // 只在 session 仅含默认开场（teacher role 单条）时触发
-    const hasOnlyOpener = activeSession.messages.length === 1 &&
-      activeSession.messages[0].role === 'teacher' &&
-      !activeSession.messages[0].evaluation // 排除已 kickoff 过的
-    if (hasOnlyOpener && diagnosis.text) {
-      void Promise.resolve().then(() => kickoffCoach())
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [studentView, activeSession?.id])
 
   // 假支付：弹成功 modal，确认后升级为 paid 用户并跳 home
   const handleSubscribe = (plan: 'month' | 'year') => {
@@ -306,7 +270,7 @@ function App() {
     const session: Session = {
       id: crypto.randomUUID(),
       title: '新的提问',
-      messages: [{ ...firstMessage, id: crypto.randomUUID(), time: fmt() }],
+      messages: [],
     }
     setSessions((current) => [session, ...current])
     setActiveSessionId(session.id)

@@ -1850,6 +1850,9 @@ function UploadCoursewareView({ setCards, setView }: {
         <p className="eyebrow">省时模式 · 推荐</p>
         <h2>把课件丢进来，AI 自动整理你的讲题方法</h2>
         <p>支持 PDF / DOC / PPT / 图片 等格式。AI 会按你的讲法提取「方法卡草稿」，你只需要审核。</p>
+        <div className="paste-hint" style={{ marginTop: 16 }}>
+          🧪 演示原型：本页是教师训练后台的交互流程演示。当前 AI 解析按文件名生成草稿（mock），真实部署将接入 GLM-4V / Qwen-VL 等视觉模型，对 PPT / PDF / 板书图片做内容级解析。
+        </div>
       </div>
 
       <div className="panel">

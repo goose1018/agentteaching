@@ -24,8 +24,8 @@
 | **认证** | mock 登录（微信→新用户 / 手机号→老用户） |
 | **支付** | 假 modal（演示用） |
 | **路由** | useState + hash routing（`#/methods` `#/tutor/chang/story`） |
-| **代码量** | App.tsx 3208 行 · App.patch.css 6021 行 ⚠️ 待拆 |
-| **组件数** | 全在 App.tsx 里堆砌 ~25 个组件 |
+| **代码量** | App.tsx 2854 行 · App.patch.css 5341 行 ⚠️ 主体仍待拆 |
+| **组件数** | API 层与部分子组件已搬出（`api/`、`components/{shared,student,teacher,welcome}/`），page-level 组件仍在 App.tsx，约 25 个 |
 | **测试** | 无 |
 
 ---
@@ -113,13 +113,15 @@ LoginModal
 
 **老师端目前是纯演示，没接生产逻辑**。
 
+> ⚠️ **演示纪律**：给真老师 / 投资人演示老师端时，必须主动说明"上传课件 / 审核 / 发布 这些页面是交互原型，真实解析待接视觉模型（GLM-4V / Qwen-VL）"。否则老师现场传一份 PPT 看到按文件名 mock 出来的结果，信任会直接掉。`UploadCoursewareView` 顶部已加 🧪 演示原型 banner。
+
 ---
 
 ## 5. AI 集成
 
 ### 模型
 - `deepseek-v4-flash`（DeepSeek 2026 新模型）
-- 默认开启思考模式（reasoning_content + content）
+- ⚠️ **思考模式：未显式开启**。代码（`api/deepseek.ts:64-70`）只传 `model / messages / temperature / response_format / max_tokens`，没有 `enable_thinking` / `reasoning_effort` 等参数；返回也只取 `message.content`，未解析 `reasoning_content`。模型自身行为由 DeepSeek 端默认配置决定，不要在文档/对外材料里宣称"开启了思考模式"。
 - JSON 输出模式（`response_format: json_object`）
 
 ### Endpoint
@@ -130,7 +132,7 @@ LoginModal
 **❌ V4-Flash 不支持图像输入**（已实测：返回 `unknown variant image_url`）。
 当前演示版**强制学生粘贴题目文字**。Banner 提示「图像识别还在接入中」。
 
-### Persona / Prompt（teacherPersona.ts）
+### Persona / Prompt（`api/teacherPrompt.ts`）
 - 角色：X 老师（北师大物理硕士、前 XXX 机构 9 年金牌、12 年教龄）
 - 教学原则 5 条：先看清对象/过程/条件 → 不直接给答案 → 错题比对题宝贵 → ...
 - 说话风格 8 条：≤150 字、所有公式 LaTeX `$...$` 包裹、不用「AI/分身」、永远反问引导
@@ -138,7 +140,7 @@ LoginModal
 - **JSON 输出**：`{ evaluation: 'correct'|'partial'|'wrong'|null, content: string }`
 - evaluation 严格规则：多数情况 null，不要默认 partial
 
-### Cleanup（aiProvider.ts）
+### Cleanup（`api/deepseek.ts`）
 - 移除 markdown `**xx**` `## xx`
 - $ 数量奇数 → 移除孤立 $（避免 raw 显示）
 - 检测到孤立 `\text{}` `\frac{}` → 自动包 $...$
@@ -227,17 +229,33 @@ LoginModal
 
 成本估算（100 个付费用户 / 月）：
 - 服务器 ¥100/月（轻量级 4C8G）
-- DeepSeek API ¥30/月（按 100 用户 × 100 题计）
+- **DeepSeek API ¥500–1500/月**（按 100 用户 × 100 题/月 × 平均 5 轮对话粗算）
+  - 每轮 prompt ≈ system 2k + 30 张方法卡 digest 3k + context 1k + history 2k ≈ **8k input tokens**
+  - 单题 input ≈ 40k · output ≈ 4k · Summary 调用再加 ~2k
+  - 折合月度 ≈ **4 亿 input + 4 千万 output**
+  - 老 HISTORY 写的 ¥30 是凭直觉填的，差 10–50 倍，**不要拿这个数字给投资人 / 老师看**
 - 短信 ¥50/月
 - ICP 备案 + 微信 ¥600/年
 - 域名 ¥55/年
+
+商业期 API 成本控制必做：
+1. **每用户每日 token 限额**（防恶意刷 / 长对话失控）
+2. **每题 token 统计**（埋点：input/output/cache_hit 三档分别计数，按用户 × 日聚合）
+3. **长 prompt 压缩**：方法卡 digest 从 30 张按 topic 命中收敛到 3–5 张；history 超 6 轮做摘要
+4. **prompt cache**：system + 方法卡库 digest 这两段固定，命中后 input 价格降一档
+5. **热门方法卡 + 常见问法做答案缓存**：同一道题反复有人问，命中直接返回审过的答案
+6. **Summary 改异步**：题做完异步生成，不阻塞 UI，可错峰 / 批量调用
 
 ---
 
 ## 10. 下一阶段方向
 
 ### 优先做
-1. **代码模块化**（正在做）—— App.tsx 拆 12 个文件
+1. **代码模块化**
+   - ✅ API 层已拆出（`api/deepseek.ts` · `api/teacherPrompt.ts`）
+   - ✅ 子组件目录已建（`components/{shared,student,teacher,welcome}/`），Capture 等已搬出
+   - ⏳ page-level 组件（Welcome / NewUserHome / Coach / Summary / TeacherList / TeacherWorkbench …）仍在 App.tsx，待按页拆 8–10 个文件
+   - ⏳ state hooks（userTier / freeAttempts / mistakes / cards 的 localStorage 同步）待抽 `state/` 自定义 hook
 2. **HISTORY.md**（本文档）—— 完成
 3. **修真老师录音/视频**作为 demo —— 找你那位前爱智康老师
 4. **接 GLM-4V** vision 让拍题流程变真
@@ -282,7 +300,7 @@ LoginModal
 1. 本文（5 分钟）
 2. `package.json` + `vite.config.ts`（1 分钟）
 3. `src/App.tsx` 找 `function App()`（10 分钟看路由）
-4. `src/aiProvider.ts` + `src/teacherPersona.ts`（5 分钟看 AI 集成）
+4. `src/api/deepseek.ts` + `src/api/teacherPrompt.ts`（5 分钟看 AI 集成）
 5. `design-system/colors_and_type.css`（2 分钟看 token）
 6. 跑 `npm run dev`，走一遍 demo 流程（10 分钟）
 

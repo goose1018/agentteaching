@@ -32,8 +32,8 @@
 | **认证** | mock 登录（微信→新用户 / 手机号→老用户） |
 | **支付** | 假 modal（演示用） |
 | **路由** | useState + hash routing（`#/methods` `#/tutor/chang/story`） |
-| **代码量** | App.tsx 2854 行 · App.patch.css 5341 行 ⚠️ 主体仍待拆 |
-| **组件数** | API 层与部分子组件已搬出（`api/`、`components/{shared,student,teacher,welcome}/`），page-level 组件仍在 App.tsx，约 25 个 |
+| **代码量** | App.tsx **597 行**（纯 orchestrator）· App.patch.css 5341 行 ⚠️ CSS 待拆 |
+| **组件数** | 全部 page-level 组件已拆出到 `components/{shared,student,teacher,welcome}/`，App.tsx 只剩路由 + 顶层 state + state hash routing + SEO meta |
 | **测试** | 无 |
 
 ---
@@ -204,8 +204,8 @@ LoginModal
 ## 8. 已知坑 / 当前限制
 
 ### 🔴 严重
-- **App.tsx 2854 行** —— 单文件巨石，AI 改一处影响全局（page-level 组件待按 Coach/Summary/StudentHome/TeacherList/TeacherWorkbench/Pricing 拆 6 个文件）
-- **App.patch.css 5341 行** —— 同上（待按 welcome/student/teacher/summary/capture 至少拆 5 个文件）
+- ~~**App.tsx 巨石**~~ ✅ 已拆 — App.tsx 现 ~600 行纯 orchestrator，page 组件在 `components/{shared,student,teacher,welcome}/`
+- **App.patch.css 5341 行** —— 单文件 CSS 巨石（待按 welcome/student/teacher/summary/capture 至少拆 5 个文件）
 - **没有后端** —— userTier / freeAttemptsLeft / mistakes / cards 全在 localStorage，浏览器一改就破
 - **没有真支付** —— 任何人通过 devtools 改 localStorage 就能"白嫖"
 - **API key 暴露风险** —— `VITE_DEEPSEEK_API_KEY` 会被 Vite 打进 bundle，**部署后任何用户可在 devtools 里看到**
@@ -270,10 +270,13 @@ LoginModal
 
 ### 优先做
 1. **代码模块化**
-   - ✅ API 层已拆出（`api/deepseek.ts` · `api/teacherPrompt.ts`）
-   - ✅ 子组件目录已建（`components/{shared,student,teacher,welcome}/`），Capture 等已搬出
-   - ⏳ page-level 组件（Welcome / NewUserHome / Coach / Summary / TeacherList / TeacherWorkbench …）仍在 App.tsx，待按页拆 8–10 个文件
-   - ⏳ state hooks（userTier / freeAttempts / mistakes / cards 的 localStorage 同步）待抽 `state/` 自定义 hook
+   - ✅ API 层（`api/deepseek.ts` · `api/teacherPrompt.ts` · `api/aiClient.ts`）
+   - ✅ 子组件目录（`components/{shared,student,teacher,welcome}/`）
+   - ✅ **全部 page-level 组件已拆出**（17 个组件 · Coach / Summary / Pricing / StudentHome / TeacherList / TutorDetail / Confirm / MistakesPage / NewUserHome / Settings / SubjectSelect / Welcome / MethodLibrary / MethodCardDetail / TutorStory / TeacherWorkbench / UploadCoursewareView）
+   - ✅ Tutor 数据 → `data/tutors.ts`，方法卡 seed loader → `data/methodCardLoader.ts`，错题 seed → `domain.ts`
+   - ✅ Types 去重 — 9 个重复类型从 App.tsx 删除，全部走 `types.ts`
+   - ⏳ **CSS 拆分** — App.patch.css 仍 5341 行单文件，是下一步重点
+   - ⏳ state hooks（userTier / freeAttempts / mistakes / cards 的 localStorage 同步）可考虑抽 `state/` 自定义 hook（不紧急）
 2. **HISTORY.md**（本文档）—— 完成
 3. **修真老师录音/视频**作为 demo —— 找你那位前爱智康老师
 4. **接 GLM-4V** vision 让拍题流程变真

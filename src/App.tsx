@@ -59,33 +59,10 @@ import './App.css'
 import './App.patch.css'
 
 
+// Coach 第一条 placeholder 消息 — 进 coach 时如果只有这条，会被 AI 真开场覆盖
 const firstMessage: Message = { id:'m1', role:'teacher', content:'把题发上来。先别急着找公式，物理题先看对象、过程和条件；这三样看清楚，公式自然会出来。', time:'09:41', tags:['高中物理','解题路径'] }
-const fmt = () => new Intl.DateTimeFormat('zh-CN',{hour:'2-digit',minute:'2-digit'}).format(new Date())
 
-
-// 当 seed 内容更新时只需 bump 这个版本号，App 启动会把缺失的种子卡补进 localStorage
-// 不会覆盖老师自己已经创建/修改过的卡（按 id 去重）
-
-// ChatReplay 组件已被 Slide 3 内联 chat-card 取代
-// Tex 组件已迁移到 components/shared/Tex.tsx
-
-// ---- Mock 登录 modal（演示用，一点就进）
-// LoginModal / PaywallModal / PaymentSuccessModal 已迁移到 components/welcome/AuthModals.tsx
-
-// ---- 新用户首页占位（等 Claude Design 出完整设计后替换内容）
-// PortraitAvatar 组件已迁移到 components/shared/PortraitAvatar.tsx
-
-
-
-// ---- 方法卡库（公开页，可被搜索引擎收录）
-
-
-
-// Capture / knowledgeMastery / last7DaysBars 已迁移到 components/student/Capture.tsx + data/defaults.ts
-
-// Capture component moved to components/student/Capture.tsx
-
-
+const fmt = () => new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit' }).format(new Date())
 
 function App() {
   const [appView, setAppView] = useState<AppView>('welcome')

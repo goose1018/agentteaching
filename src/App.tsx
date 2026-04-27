@@ -46,7 +46,8 @@ type StudentView = 'home' | 'newUserHome' | 'capture' | 'confirm' | 'coach' | 's
 type TeacherView = 'home' | 'upload' | 'train' | 'methods' | 'review' | 'records' | 'publish' | 'quality'
 type Role = 'student' | 'teacher'
 
-interface Message { id: string; role: Role; content: string; time: string; tags?: string[] }
+type Evaluation = 'correct' | 'partial' | 'wrong' | null
+interface Message { id: string; role: Role; content: string; time: string; tags?: string[]; evaluation?: Evaluation }
 interface Session { id: string; title: string; messages: Message[] }
 interface Subject { name: string; icon: string; status: string }
 interface SeedMethodCard {
@@ -287,6 +288,70 @@ function LoginModal({ close, onLoginNew, onLoginPaid }: {
           演示版本：点任意按钮均可登录，无需输入。<br />
           上线后将接入微信开放平台 OAuth 与短信验证码。
         </p>
+      </div>
+    </div>
+  )
+}
+
+// ---- 付费墙 modal（新用户用完免费额度时弹出）
+function PaywallModal({ tutor, onSubscribe, onClose }: {
+  tutor: Tutor
+  onSubscribe: (plan: 'month' | 'year') => void
+  onClose: () => void
+}) {
+  return (
+    <div className="login-modal" onClick={onClose}>
+      <div className="login-card paywall" onClick={(e) => e.stopPropagation()}>
+        <button className="login-close" type="button" onClick={onClose} aria-label="关闭">×</button>
+        <div className="paywall-icon">🎯</div>
+        <h2>免费体验已用完</h2>
+        <p className="paywall-detail">
+          你已经走完一遍 {tutor.name} 的解题陪练。
+          <br />
+          想继续跟 {tutor.name} 练完整套高考物理？
+        </p>
+        <div className="paywall-options">
+          <button className="paywall-option" type="button" onClick={() => onSubscribe('month')}>
+            <strong>月卡 ¥{tutor.month}/月</strong>
+            <span>灵活订阅、随时取消 · 7 天无理由退款</span>
+          </button>
+          <button className="paywall-option recommended" type="button" onClick={() => onSubscribe('year')}>
+            <span className="rec-tag">省 ¥{tutor.month * 12 - tutor.year}</span>
+            <strong>年卡 ¥{tutor.year}/年</strong>
+            <span>折合 ¥{Math.round(tutor.year / 12)}/月 · 一年陪练高考全程</span>
+          </button>
+        </div>
+        <button className="paywall-later" type="button" onClick={onClose}>
+          稍后再说
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ---- 假支付成功 modal（演示用）
+function PaymentSuccessModal({ tutor, plan, onDone }: {
+  tutor: Tutor
+  plan: 'month' | 'year'
+  onDone: () => void
+}) {
+  return (
+    <div className="login-modal" onClick={onDone}>
+      <div className="login-card pay-success" onClick={(e) => e.stopPropagation()}>
+        <div className="pay-icon">✓</div>
+        <h2>订阅成功</h2>
+        <p className="pay-detail">
+          已开通 <strong>{tutor.name} · 分身</strong> {plan === 'month' ? '月卡' : '年卡'}
+          <br />
+          <span className="pay-amount">¥{plan === 'month' ? tutor.month : tutor.year}</span>
+        </p>
+        <p className="pay-disclaimer">
+          演示模式 — 实际未发生支付。<br />
+          上线后将接入微信支付 / 支付宝。
+        </p>
+        <button className="pay-cta" type="button" onClick={onDone}>
+          开始陪练 →
+        </button>
       </div>
     </div>
   )
@@ -1060,6 +1125,21 @@ const seedMistakes: MistakeRecord[] = [
   },
 ]
 
+// Mock 学生回答评价（接 LLM 后由 AI 输出，目前根据关键词匹配）
+function mockEvaluateAnswer(answer: string, card: MethodCard): Evaluation {
+  const text = answer.toLowerCase()
+  if (!text.trim() || text.length < 2) return null
+  // 包含「不会 / 不知道 / 不确定 / 我先想想」类 → partial
+  if (/不会|不知道|不确定|想想|提示|帮我|看不懂/.test(text)) return 'partial'
+  // 包含跟方法卡 forbiddenPhrases 重合的 → wrong
+  if (card.forbiddenPhrases?.some((p) => text.includes(p.toLowerCase()))) return 'wrong'
+  // 包含方法步骤里的关键词 → correct
+  const stepKeywords = card.methodSteps.flatMap((s) => s.split(/[、，。\s]+/)).filter((k) => k.length >= 2)
+  if (stepKeywords.some((k) => text.includes(k.toLowerCase()))) return 'correct'
+  // 默认 partial
+  return 'partial'
+}
+
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const minutes = Math.floor(diff / 60000)
@@ -1328,10 +1408,12 @@ const knowledgeMastery = [
 ]
 const last7DaysBars = [22, 48, 8, 65, 80, 38, 55]
 
-function Capture({ setDiagnosis, setView, tutor }: {
+function Capture({ setDiagnosis, setView, tutor, userTier, freeAttemptsLeft }: {
   setDiagnosis: (d: Diagnosis) => void
   setView: (v: StudentView) => void
   tutor: Tutor
+  userTier: 'visitor' | 'new' | 'paid'
+  freeAttemptsLeft: number
 }) {
   const [pasted, setPasted] = useState('')
   const [scanStep, setScanStep] = useState<0 | 1 | 2 | 3 | 4>(0) // 0 = closed, 1-4 = step
@@ -1344,13 +1426,13 @@ function Capture({ setDiagnosis, setView, tutor }: {
   useEffect(() => {
     if (scanStep === 0) return
     if (scanStep === 4) {
-      // 完成 — 写入 diagnosis 然后跳到 confirm
+      // 完成 — 写入 diagnosis 直接跳 coach（去掉冗余 confirm 页）
       const finalText = pasted || recognizeProblemImage('physics-demo.png').text
       const r = recognizeProblemImage('physics-demo.png')
       setDiagnosis({ ...defaultDiagnosis, text: finalText, confidence: r.confidence })
       const t = window.setTimeout(() => {
         setScanStep(0)
-        setView('confirm')
+        setView('coach')
       }, 700)
       return () => window.clearTimeout(t)
     }
@@ -1426,18 +1508,31 @@ function Capture({ setDiagnosis, setView, tutor }: {
         </div>
 
         <aside className="capture-right">
-          {/* 今日剩余次数 */}
+          {/* 今日剩余次数 — 新用户显示 1 次免费体验，老用户显示无限 */}
           <div className="rail-card quota-card">
             <div className="rail-head">
-              <h4>今日剩余提问</h4>
-              <span className="rail-meta">FREE PLAN</span>
+              <h4>{userTier === 'paid' ? '今日已用' : '免费体验额度'}</h4>
+              <span className="rail-meta">{userTier === 'paid' ? 'MEMBER' : 'FREE'}</span>
             </div>
             <div className="quota-num">
-              <span className="quota-n">7</span>
-              <span className="quota-total">/ 10 次</span>
+              {userTier === 'paid' ? (
+                <>
+                  <span className="quota-n">∞</span>
+                  <span className="quota-total">无限</span>
+                </>
+              ) : (
+                <>
+                  <span className="quota-n">{freeAttemptsLeft}</span>
+                  <span className="quota-total">/ 1 次</span>
+                </>
+              )}
             </div>
-            <div className="quota-bar"><div className="quota-fill" style={{ width: '70%' }} /></div>
-            <div className="quota-foot">每天 0:00 重置 · <a href="#">升级解锁无限次</a></div>
+            {userTier !== 'paid' && (
+              <div className="quota-bar"><div className="quota-fill" style={{ width: `${freeAttemptsLeft * 100}%` }} /></div>
+            )}
+            <div className="quota-foot">
+              {userTier === 'paid' ? '已订阅 X 老师 · 不限次数' : '免费体验后订阅 ¥299/月解锁无限'}
+            </div>
           </div>
 
           {/* 知识点雷达图 */}
@@ -1652,12 +1747,19 @@ function Coach({ tutor, session, draft, setDraft, send, step, setStep, card, isT
               </div>
             )
           }
+          const evalLabel: Record<NonNullable<Evaluation>, { text: string; cls: string }> = {
+            correct: { text: '✓ 想对了 — 这一步过', cls: 'eval-correct' },
+            partial: { text: '⚠ 偏了 — 让我提醒一下', cls: 'eval-partial' },
+            wrong: { text: '✗ 跟方法卡不一致 — 我们重来', cls: 'eval-wrong' },
+          }
+          const ev = m.evaluation ? evalLabel[m.evaluation] : null
           return (
             <div key={m.id} className="coach-bubble ai">
               <span className="stamp-mark"><SealRound size={44} rotate={8} /></span>
               <div className="signoff">
                 <span className="sig-name">{tutor.name} · 分身</span>
                 <span className="sig-tag">v1.2</span>
+                {ev && <span className={`eval-badge ${ev.cls}`}>{ev.text}</span>}
               </div>
               <div className="body"><Tex>{m.content}</Tex></div>
               <div className="review">
@@ -1811,7 +1913,7 @@ function Summary({ diagnosis, card, setView, step }: { diagnosis: Diagnosis; car
     </div>
   </section>
 }
-function Pricing({ tutor, setView }: { tutor: Tutor; setView: (v: StudentView) => void }) {
+function Pricing({ tutor, onSubscribe }: { tutor: Tutor; onSubscribe: (plan: 'month' | 'year') => void }) {
   const monthlyEquiv = Math.round(tutor.year / 12)
   const savings = tutor.month * 12 - tutor.year
   return (
@@ -1830,7 +1932,7 @@ function Pricing({ tutor, setView }: { tutor: Tutor; setView: (v: StudentView) =
             <li><CheckCircle2 size={14} /> 每周学习摘要</li>
             <li><CheckCircle2 size={14} /> 7 天无理由退款</li>
           </ul>
-          <button className="ghost" onClick={() => setView('home')}>开通月卡</button>
+          <button className="ghost" onClick={() => onSubscribe('month')}>开通月卡</button>
         </div>
 
         <div className="price-card recommended">
@@ -1845,7 +1947,7 @@ function Pricing({ tutor, setView }: { tutor: Tutor; setView: (v: StudentView) =
             <li><CheckCircle2 size={14} /> 优先使用新方法库</li>
             <li><CheckCircle2 size={14} /> 7 天无理由退款</li>
           </ul>
-          <button onClick={() => setView('home')}>开通年卡</button>
+          <button onClick={() => onSubscribe('year')}>开通年卡</button>
         </div>
       </div>
 
@@ -2475,6 +2577,18 @@ function App() {
     localStorage.setItem('physicspath:purchased-ids', JSON.stringify(purchasedIds))
   }, [purchasedIds])
   const [showLogin, setShowLogin] = useState(false)
+  const [showPaySuccess, setShowPaySuccess] = useState<null | 'month' | 'year'>(null)
+  const [showPaywall, setShowPaywall] = useState(false)
+  // 新用户免费额度（首次试用 1 道题）
+  const [freeAttemptsLeft, setFreeAttemptsLeft] = useState<number>(() => {
+    try {
+      const v = localStorage.getItem('physicspath:free-attempts')
+      return v !== null ? Number(v) : 1
+    } catch { return 1 }
+  })
+  useEffect(() => {
+    localStorage.setItem('physicspath:free-attempts', String(freeAttemptsLeft))
+  }, [freeAttemptsLeft])
   const [showSettings, setShowSettings] = useState(false)
   const [diagnosis, setDiagnosis] = useState<Diagnosis>(defaultDiagnosis)
   const [draft, setDraft] = useState('')
@@ -2584,6 +2698,10 @@ function App() {
     }
     setSessions((current) => [session, ...current])
     setActiveSessionId(session.id)
+    if (userTier === 'new' && freeAttemptsLeft <= 0) {
+      setShowPaywall(true)
+      return
+    }
     setStudentView('capture')
   }
 
@@ -2597,16 +2715,35 @@ function App() {
     const card = findMethodCard(text, cards)
     const result = await generateAnswerWithProvider({ question: text, methodCard: card })
     setAnswerReviews((current) => [createAnswerReview(text, result.answer, card), ...current].slice(0, 50))
+    // 基于学生消息内容 mock 评价（接通真 LLM 后由 AI 输出 evaluation 字段）
+    const evaluation = mockEvaluateAnswer(text, card)
     setMessages((current) => [
       ...current,
-      { id: crypto.randomUUID(), role: 'teacher', content: result.answer, time: fmt(), tags: [card.topic] },
+      { id: crypto.randomUUID(), role: 'teacher', content: result.answer, time: fmt(), tags: [card.topic], evaluation },
     ])
     setIsThinking(false)
   }
 
-  const purchaseTutor = (tutor: Tutor) => {
-    setPurchasedIds((current) => [...new Set([...current, tutor.id])])
-    setSelectedTutor({ ...tutor, purchased: true })
+  // 假支付：弹成功 modal，确认后升级为 paid 用户并跳 home
+  const handleSubscribe = (plan: 'month' | 'year') => {
+    setShowPaySuccess(plan)
+  }
+  const finishPayment = () => {
+    setShowPaySuccess(null)
+    setUserTier('paid')
+    setPurchasedIds([liuTutor.id])
+    setSelectedTutor({ ...liuTutor, purchased: true })
+    setFreeAttemptsLeft(0) // 已购买后免费额度归零（已经无限）
+    setStudentView('home')
+  }
+
+  // 新用户尝试开新一道题：检查免费额度
+  const tryStartCapture = () => {
+    if (userTier === 'new' && freeAttemptsLeft <= 0) {
+      setShowPaywall(true)
+      return
+    }
+    setStudentView('capture')
   }
 
   const resetDemo = () => {
@@ -2655,6 +2792,20 @@ function App() {
           close={() => setShowLogin(false)}
           onLoginNew={loginAsNew}
           onLoginPaid={loginAsPaid}
+        />
+      )}
+      {showPaySuccess && (
+        <PaymentSuccessModal
+          tutor={liuTutor}
+          plan={showPaySuccess}
+          onDone={finishPayment}
+        />
+      )}
+      {showPaywall && (
+        <PaywallModal
+          tutor={liuTutor}
+          onSubscribe={(plan) => { setShowPaywall(false); handleSubscribe(plan) }}
+          onClose={() => { setShowPaywall(false); setStudentView('newUserHome') }}
         />
       )}
     </>
@@ -2765,16 +2916,16 @@ function App() {
         {studentView === 'newUserHome' && (
           <NewUserHome
             tutor={liuTutor}
-            onTryFree={() => setStudentView('capture')}
+            onTryFree={tryStartCapture}
             onBrowseTutors={() => setStudentView('teachers')}
             onViewStory={() => { window.location.hash = '#/tutor/chang/story' }}
-            onSubscribe={() => { setPreviewTutor(liuTutor); setStudentView('teacherDetail') }}
+            onSubscribe={() => { setStudentView('pricing') }}
           />
         )}
         {studentView === 'subjects' && <SubjectSelect selected={selectedSubject} setSelected={setSelectedSubject} setView={setStudentView} />}
         {studentView === 'teachers' && <TeacherList list={availableTutors} setPreview={setPreviewTutor} setView={setStudentView} />}
-        {studentView === 'teacherDetail' && <TutorDetail tutor={previewTutor} back={() => setStudentView('teachers')} buy={() => { purchaseTutor(previewTutor); setSelectedTutor(previewTutor); setStudentView('home') }} enter={() => { setSelectedTutor(previewTutor); setStudentView('coach') }} />}
-        {studentView === 'capture' && <Capture setDiagnosis={setDiagnosis} setView={setStudentView} tutor={selectedTutor} />}
+        {studentView === 'teacherDetail' && <TutorDetail tutor={previewTutor} back={() => setStudentView('teachers')} buy={() => handleSubscribe('month')} enter={() => { setSelectedTutor(previewTutor); setStudentView('coach') }} />}
+        {studentView === 'capture' && <Capture setDiagnosis={setDiagnosis} setView={setStudentView} tutor={selectedTutor} userTier={userTier} freeAttemptsLeft={freeAttemptsLeft} />}
         {studentView === 'confirm' && <Confirm diagnosis={diagnosis} setDiagnosis={setDiagnosis} setView={setStudentView} />}
         {studentView === 'coach' && (
           <Coach
@@ -2790,29 +2941,34 @@ function App() {
             setView={setStudentView}
             diagnosis={diagnosis}
             onComplete={() => {
-              const subjectArea: SubjectArea = (
-                ['力学', '运动学', '能量', '电磁学', '热学', '光学', '原子', '振动'] as const
-              ).find((k) => methodCard.topic.includes(k.replace('学', ''))) ?? '力学'
-              const newMistake: MistakeRecord = {
-                id: `m-${Date.now()}`,
-                questionText: diagnosis.text,
-                topic: methodCard.topic,
-                cardId: methodCard.id,
-                difficulty: (diagnosis.difficulty.includes('易') ? '易' : diagnosis.difficulty.includes('难') ? '难' : '中'),
-                stuckAtStep: step,
-                totalSteps: methodCard.methodSteps.length,
-                subjectArea,
-                status: step >= methodCard.methodSteps.length - 1 ? 'mastered' : 'open',
-                createdAt: new Date().toISOString(),
-                attemptCount: 1,
+              if (userTier === 'paid') {
+                const subjectArea: SubjectArea = (
+                  ['力学', '运动学', '能量', '电磁学', '热学', '光学', '原子', '振动'] as const
+                ).find((k) => methodCard.topic.includes(k.replace('学', ''))) ?? '力学'
+                const newMistake: MistakeRecord = {
+                  id: `m-${Date.now()}`,
+                  questionText: diagnosis.text,
+                  topic: methodCard.topic,
+                  cardId: methodCard.id,
+                  difficulty: (diagnosis.difficulty.includes('易') ? '易' : diagnosis.difficulty.includes('难') ? '难' : '中'),
+                  stuckAtStep: step,
+                  totalSteps: methodCard.methodSteps.length,
+                  subjectArea,
+                  status: step >= methodCard.methodSteps.length - 1 ? 'mastered' : 'open',
+                  createdAt: new Date().toISOString(),
+                  attemptCount: 1,
+                }
+                setMistakes((current) => [newMistake, ...current])
+              } else if (userTier === 'new') {
+                // 新用户：扣减免费额度，不写错题本
+                setFreeAttemptsLeft((n) => Math.max(0, n - 1))
               }
-              setMistakes((current) => [newMistake, ...current])
               setStudentView('summary')
             }}
           />
         )}
         {studentView === 'summary' && <Summary diagnosis={diagnosis} card={methodCard} setView={setStudentView} step={step} />}
-        {studentView === 'pricing' && <Pricing tutor={selectedTutor} setView={setStudentView} />}
+        {studentView === 'pricing' && <Pricing tutor={selectedTutor} onSubscribe={handleSubscribe} />}
         {studentView === 'mistakes' && (
           <MistakesPage
             mistakes={mistakes}

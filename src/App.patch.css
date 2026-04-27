@@ -4399,6 +4399,75 @@
   text-align: center;
 }
 
+/* Payment success modal */
+.login-card.pay-success {
+  text-align: center;
+  padding: 36px 32px 28px;
+}
+.pay-success .pay-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 16px;
+  background: var(--ppath-ink-green-800);
+  color: var(--ppath-paper);
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 32px;
+  font-weight: 900;
+  box-shadow: 0 12px 28px -16px var(--ppath-ink-green-800);
+}
+.pay-success h2 {
+  margin: 0 0 8px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-weight: 900;
+  font-size: 22px;
+  color: var(--ppath-fg-1);
+}
+.pay-success .pay-detail {
+  margin: 0 0 16px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ppath-fg-2);
+}
+.pay-success .pay-detail strong {
+  color: var(--ppath-ink-green-800);
+}
+.pay-success .pay-amount {
+  font-family: var(--ppath-font-display);
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--ppath-amber-700);
+  letter-spacing: -.02em;
+}
+.pay-success .pay-disclaimer {
+  margin: 12px 0 20px;
+  padding: 10px 12px;
+  background: var(--ppath-amber-100, #fcefd6);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--ppath-amber-700);
+  line-height: 1.6;
+}
+.pay-success .pay-cta {
+  display: inline-block;
+  width: 100%;
+  padding: 12px 24px;
+  background: var(--ppath-ink-green-800);
+  color: var(--ppath-paper);
+  border: none;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 180ms ease, transform 180ms ease;
+}
+.pay-success .pay-cta:hover {
+  background: var(--ppath-ink-green-700);
+  transform: translateY(-1px);
+}
+
 /* ============================================================
  * NewUserHome — 新用户首页占位（等 Claude Design 升级）
  * ============================================================ */
@@ -5234,6 +5303,108 @@
   padding: 1px 5px;
   border-radius: 4px;
 }
+/* 评价徽章 — 学生回答的对错反馈 */
+.coach-shell .coach-bubble.ai .eval-badge {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: -.005em;
+  white-space: nowrap;
+}
+.coach-shell .coach-bubble.ai .eval-badge.eval-correct {
+  background: rgba(74, 107, 70, .15);
+  color: var(--ppath-success-700, #2c8a5b);
+}
+.coach-shell .coach-bubble.ai .eval-badge.eval-partial {
+  background: var(--ppath-amber-100, #fcefd6);
+  color: var(--ppath-amber-700);
+}
+.coach-shell .coach-bubble.ai .eval-badge.eval-wrong {
+  background: rgba(192, 80, 77, .15);
+  color: #a63a35;
+}
+
+/* Paywall modal */
+.login-card.paywall {
+  text-align: center;
+  padding: 36px 32px 28px;
+}
+.paywall .paywall-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+.paywall h2 {
+  margin: 0 0 8px;
+  font-family: 'Noto Sans SC', sans-serif;
+  font-weight: 900;
+  font-size: 22px;
+}
+.paywall .paywall-detail {
+  margin: 0 0 20px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ppath-fg-2);
+}
+.paywall .paywall-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.paywall .paywall-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 18px;
+  background: var(--ppath-card);
+  border: 1px solid var(--ppath-line);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease;
+}
+.paywall .paywall-option:hover {
+  transform: translateY(-1px);
+  border-color: var(--ppath-ink-green-600);
+  background: var(--ppath-paper-deep);
+}
+.paywall .paywall-option strong {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ppath-ink-green-800);
+}
+.paywall .paywall-option span {
+  font-size: 12px;
+  color: var(--ppath-fg-3);
+}
+.paywall .paywall-option.recommended {
+  border: 2px solid var(--ppath-ink-green-800);
+  background: linear-gradient(155deg, var(--ppath-paper-deep), var(--ppath-card));
+}
+.paywall .paywall-option .rec-tag {
+  position: absolute;
+  top: -10px;
+  right: 16px;
+  background: var(--ppath-amber-700);
+  color: var(--ppath-paper);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.paywall .paywall-later {
+  margin-top: 16px;
+  background: transparent;
+  border: none;
+  color: var(--ppath-fg-3);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.paywall .paywall-later:hover { color: var(--ppath-fg-2); }
 
 /* 正文 */
 .coach-shell .coach-bubble.ai .body {

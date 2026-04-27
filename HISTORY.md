@@ -7,7 +7,15 @@
 
 ## 0. 一句话定位
 
-**PhysicsPath**：高考物理 AI 解题陪练。把名师的「解题路径」做成 AI 分身，学生订阅，每月 ¥299，年卡 ¥2390。
+**PhysicsPath**：高考物理 AI 解题陪练。把名师的「解题路径」做成 AI 分身，学生订阅。
+
+**定价分两档**：
+- **目标价**（产品成熟后 / 用做品牌锚定）：¥299/月 · ¥2390/年
+- **冷启动价**（首批 30–50 个真实用户）：建议 **¥49–99/月**，或 **首月免费 + 第 2 个月 ¥99**。理由：
+  1. 没有口碑积累 + 没人用过 + 老师还没真签约，¥299 转化几乎为 0
+  2. 首批用户的真实 token 消耗 + 留存数据 + 反馈，比早期 ARR 重要 100 倍
+  3. 之后涨价比降价容易得多——定低再涨叫"老用户福利"，定高再降叫"产品不行"
+  4. UI 上的 ¥299/¥2390 演示给老师 / 投资人看保留不动（这是给他们看的天花板）；首批真实付款走单独定价或 promo code 通道
 
 核心差异化：**不是搜题工具，是名师方法的 AI 复刻**。所有 AI 回答按名师亲审过的方法卡引导，不直接给答案。
 
@@ -196,11 +204,17 @@ LoginModal
 ## 8. 已知坑 / 当前限制
 
 ### 🔴 严重
-- **App.tsx 3208 行** —— 单文件巨石，AI 改一处影响全局
-- **App.patch.css 6021 行** —— 同上
+- **App.tsx 2854 行** —— 单文件巨石，AI 改一处影响全局（page-level 组件待按 Coach/Summary/StudentHome/TeacherList/TeacherWorkbench/Pricing 拆 6 个文件）
+- **App.patch.css 5341 行** —— 同上（待按 welcome/student/teacher/summary/capture 至少拆 5 个文件）
 - **没有后端** —— userTier / freeAttemptsLeft / mistakes / cards 全在 localStorage，浏览器一改就破
 - **没有真支付** —— 任何人通过 devtools 改 localStorage 就能"白嫖"
-- **API key 暴露风险** —— 部署后 `.env.local` 会被打进 bundle，任何用户可看到
+- **API key 暴露风险** —— `VITE_DEEPSEEK_API_KEY` 会被 Vite 打进 bundle，**部署后任何用户可在 devtools 里看到**
+  - **Demo 阶段可接受**：本仓库 `HISTORY §1` 标注"暂不部署"；只要不公开部署到带域名的生产环境就行
+  - **公开部署前必做 checklist**：
+    1. 抽 `aiClient` 接口，把 `directDeepSeekClient`（dev）和 `proxyAiClient`（prod）切开
+    2. 后端起一个最小 chat-proxy endpoint（Node / Python 都行），key 只在后端读环境变量
+    3. 前端 build 时通过 `VITE_AI_PROXY=true` 切到 proxy 实现，**确认 bundle 里 grep 不到 `sk-` / `VITE_DEEPSEEK_API_KEY` 字面量**才能上线
+    4. 旧 key 立即在 DeepSeek 控制台 revoke + 轮换新 key
 - **vision API 没有** —— 学生只能粘贴文字
 
 ### 🟡 中等

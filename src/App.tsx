@@ -522,14 +522,21 @@ function App() {
             mistakes={mistakes}
             setMistakes={setMistakes}
             openMistake={(m) => {
-              const card = cards.find((c) => c.id === m.cardId) ?? methodCard
               setDiagnosis({
                 ...defaultDiagnosis,
                 text: m.questionText,
                 difficulty: m.difficulty + '等',
-                stuck: [card.commonError ?? '看清研究对象'],
+                type: m.topic,
+                stuck: ['重新做题时先从题干重新判断题型和第一步'],
               })
-              setStep(m.stuckAtStep)
+              setStep(0)
+              const session: Session = {
+                id: crypto.randomUUID(),
+                title: `错题复做：${m.topic}`,
+                messages: [],
+              }
+              setSessions((current) => [session, ...current])
+              setActiveSessionId(session.id)
               setStudentView('coach')
             }}
           />

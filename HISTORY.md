@@ -279,6 +279,11 @@ LoginModal
    - 同时将 Coach 按钮 prompt 从“内部意图：hint/next”改成学生视角请求，减少模型复述内部控制词。
    - 诊断：保留 `[deepseek diag]`，但只在 dev 环境输出，用来观察 `finish_reason / raw_len / reasoning_len / usage`；演示和未来生产环境不应依赖它。
 
+9. **五次修正：错题本「再做一遍」必须重新做题**
+   - 现象：从错题本进入 Coach 时，会沿用错题记录里的 `cardId/stuckAtStep` 和默认诊断背景，导致电磁题进入后仍可能显示牛二/受力图相关路径。
+   - 修复：`openMistake()` 只把错题题干写入 `diagnosis.text`，把 `step` 重置为 `0`，新建空 session，进入 Coach 后由 `findMethodCard(diagnosis.text, cards)` 重新按题干匹配方法卡。
+   - 产品原则：错题复做不是“跳到上次卡点直接讲”，而是像新题一样从题干重新判断题型、重新走路径；避免默认背景污染大模型上下文。
+
 验证：本次修复后已跑 `npm run lint` 和 `npm run build`，均通过。Build 仍有大 chunk warning，属于后续代码分割/懒加载优化项，不阻塞演示。
 
 ---

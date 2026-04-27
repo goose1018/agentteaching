@@ -284,6 +284,12 @@ LoginModal
    - 修复：`openMistake()` 只把错题题干写入 `diagnosis.text`，把 `step` 重置为 `0`，新建空 session，进入 Coach 后由 `findMethodCard(diagnosis.text, cards)` 重新按题干匹配方法卡。
    - 产品原则：错题复做不是“跳到上次卡点直接讲”，而是像新题一样从题干重新判断题型、重新走路径；避免默认背景污染大模型上下文。
 
+10. **六次修正：错题 seed 与方法卡匹配器修复**
+   - 现象：即使错题复做重置了 step，顶部仍可能显示牛二/默认背景。
+   - 根因：部分 `seedMistakes.cardId` 是早期占位 id（如 `mc-电磁-感应电动势-01`），并不存在于 50 张正式 `seedMethodCards.json` 里；同时 `findMethodCard()` 只看 `topic + trigger` 的直接字符串包含，电磁/光学/原子等题干稍微不同就会 fallback 到第一张牛二卡。
+   - 修复：修正 seed 错题 cardId；`findMethodCard()` 改为打分匹配，综合 topic/trigger/teacherMove/commonError/sampleQuestion/steps，并加入电磁、电场、动量、光学、热学、原子、振动等领域信号。错题入口也优先使用 `cardId` 找到的卡来写入 `diagnosis.type/stuck`。
+   - 同时给 `.mistakes-page` 加自身滚动容器，解决错题本列表无法滚轮上下滚动。
+
 验证：本次修复后已跑 `npm run lint` 和 `npm run build`，均通过。Build 仍有大 chunk warning，属于后续代码分割/懒加载优化项，不阻塞演示。
 
 ---

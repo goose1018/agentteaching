@@ -3084,9 +3084,13 @@
  * 错题本页面 (MistakesPage / P4 + P7)
  * ============================================================ */
 .mistakes-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  padding-bottom: 64px;
 }
 
 .mistakes-page .page-head h1 {

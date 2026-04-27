@@ -16,12 +16,51 @@ export function findMethodCard(question: string, cards: MethodCard[]) {
   const publishedCards = cards.filter((card) => card.status === 'approved')
   const searchableCards = publishedCards.length > 0 ? publishedCards : cards
 
-  return (
-    searchableCards.find((card) => {
-      const keywords = [card.topic, ...card.trigger.split('、'), ...card.trigger.split('，')]
-      return keywords.some((keyword) => normalized.includes(keyword.toLowerCase().trim()))
-    }) ?? searchableCards[0]
-  )
+  const scoreCard = (card: MethodCard) => {
+    const haystack = [
+      card.topic,
+      card.trigger,
+      card.teacherMove,
+      card.commonError,
+      card.sampleQuestion,
+      ...card.methodSteps,
+      ...card.forbiddenPhrases,
+    ].join(' ').toLowerCase()
+
+    const exactTokens = [card.topic, ...card.trigger.split(/[、，,。\s]+/)]
+      .map((token) => token.trim().toLowerCase())
+      .filter((token) => token.length >= 2)
+
+    let score = 0
+    for (const token of exactTokens) {
+      if (normalized.includes(token)) score += token.length >= 4 ? 4 : 2
+    }
+
+    const domainSignals: Array<[RegExp, string[], number]> = [
+      [/电磁|磁场|磁感应|导体棒|切割磁感线|感应电动势|感应电流|安培力|楞次|法拉第|BLv/i, ['电磁', '磁', '感应', '导体棒', '切割磁感线', 'BLv'], 8],
+      [/电场|电势|电势差|电荷|带电粒子|电容|电流|电阻|闭合电路/i, ['电场', '电势', '电容', '闭合电路', '电路'], 6],
+      [/动量|碰撞|粘在一起|反冲|爆炸/i, ['动量', '碰撞', '反冲'], 7],
+      [/斜面|受力|合外力|牛顿|摩擦|连接体|圆周|弹簧/i, ['斜面', '牛顿', '受力', '连接体', '圆周', '弹簧'], 5],
+      [/透镜|焦距|像距|折射|全反射|双缝/i, ['透镜', '光学', '折射', '全反射', '双缝'], 7],
+      [/热|气体|压强|体积|温度|内能/i, ['热学', '气体', '压强', '内能'], 7],
+      [/原子|光电|能级|跃迁|α|粒子散射/i, ['原子', '光电', '能级', '跃迁', '散射'], 7],
+      [/振动|机械波|波形|周期|频率/i, ['振动', '机械波', '周期', '频率'], 7],
+    ]
+
+    for (const [pattern, cardNeedles, weight] of domainSignals) {
+      if (pattern.test(question) && cardNeedles.some((needle) => haystack.includes(needle.toLowerCase()))) {
+        score += weight
+      }
+    }
+
+    return score
+  }
+
+  const ranked = searchableCards
+    .map((card) => ({ card, score: scoreCard(card) }))
+    .sort((a, b) => b.score - a.score)
+
+  return ranked[0]?.score > 0 ? ranked[0].card : searchableCards[0]
 }
 
 export function generateTeacherAnswer(question: string, cards: MethodCard[]) {

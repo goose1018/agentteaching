@@ -3743,8 +3743,20 @@
  * 双列布局：左 stage 右 rail（quota/雷达/7天趋势）
  * ============================================================ */
 
+.app-shell.student-site .workspace > .capture-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
+}
+.app-shell.student-site .workspace > .flow-page {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
+}
 .capture-page {
-  padding: 0;
+  padding: 28px 32px 60px;
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -3871,6 +3883,12 @@
 .dropzone-stage:hover {
   border-color: var(--ppath-ink-green-600);
   background: var(--ppath-ink-green-50, #e8efe5);
+}
+.dropzone-stage.drag-over {
+  border-color: var(--ppath-ink-green-800);
+  border-style: dashed;
+  background: var(--ppath-ink-green-100, #d8e4d3);
+  transform: scale(1.01);
 }
 .dropzone-stage .icon-wrap {
   flex-shrink: 0;

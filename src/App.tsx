@@ -1422,8 +1422,25 @@ function Capture({ setDiagnosis, setView, tutor, userTier, freeAttemptsLeft }: {
   const [pasted, setPasted] = useState('')
   const [scanStep, setScanStep] = useState<0 | 1 | 2 | 3 | 4>(0) // 0 = closed, 1-4 = step
 
-  const startScan = () => {
+  const [dragOver, setDragOver] = useState(false)
+  const startScan = (file?: File) => {
+    if (file) {
+      // 真实文件上传 — 把文件名作为题目占位（接 vision API 后改成真识别）
+      setPasted(`从图片识别：${file.name}`)
+    }
     setScanStep(1)
+  }
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const f = e.dataTransfer.files?.[0]
+    if (f && f.type.startsWith('image/')) {
+      startScan(f)
+    }
+  }
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (f) startScan(f)
   }
 
   // 自动推进扫描进度
@@ -1466,24 +1483,40 @@ function Capture({ setDiagnosis, setView, tutor, userTier, freeAttemptsLeft }: {
 
           {/* 上传卡片 */}
           <div className="capture-stage">
-            <label className="dropzone-stage" htmlFor="capture-file">
+            <div
+              className={`dropzone-stage ${dragOver ? 'drag-over' : ''}`}
+              onClick={() => document.getElementById('capture-file')?.click()}
+              onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+              onDragLeave={() => setDragOver(false)}
+              onDrop={handleDrop}
+              role="button"
+              tabIndex={0}
+            >
               <div className="icon-wrap">
                 <Camera size={24} />
               </div>
               <div className="copy">
-                <h3>把题目拍照发给我</h3>
-                <p>支持拖拽 / 点击上传 · 也可以从相册选 · 单题更准确</p>
+                <h3>{dragOver ? '松开上传' : '把题目拖到这里'}</h3>
+                <p>支持拖拽图片 / 点击此区域选择 · 单题识别更准</p>
               </div>
-              <div className="action-row">
-                <button type="button" className="seg-btn primary" onClick={(e) => { e.preventDefault(); startScan() }}>
-                  <Camera size={14} /> 拍照
+              <div className="action-row" onClick={(e) => e.stopPropagation()}>
+                <button
+                  type="button"
+                  className="seg-btn primary"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); startScan() }}
+                >
+                  <Camera size={14} /> 演示拍照
                 </button>
-                <button type="button" className="seg-btn ghost" onClick={(e) => { e.preventDefault(); document.getElementById('capture-file')?.click() }}>
+                <button
+                  type="button"
+                  className="seg-btn ghost"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); document.getElementById('capture-file')?.click() }}
+                >
                   <ImageIcon size={14} /> 从相册选择
                 </button>
               </div>
-              <input id="capture-file" type="file" accept="image/*" onChange={() => startScan()} hidden />
-            </label>
+            </div>
+            <input id="capture-file" type="file" accept="image/*" onChange={handleFileSelect} hidden />
 
             <div className="or-divider"><span>或者</span></div>
 
@@ -1496,7 +1529,12 @@ function Capture({ setDiagnosis, setView, tutor, userTier, freeAttemptsLeft }: {
 
             <div className="stage-footer">
               <span>仅你和老师能看到 · 不会出现在公共题库</span>
-              <button className="send-teacher-btn" onClick={() => startScan()} disabled={!pasted.trim() && false /* 拍照路径也允许 */}>
+              <button
+                type="button"
+                className="send-teacher-btn"
+                onClick={() => startScan()}
+                disabled={false}
+              >
                 发给老师
                 <ArrowRight size={14} />
               </button>
@@ -1865,7 +1903,8 @@ function Summary({ diagnosis, card, setView, conversation }: {
   const totalSteps = summary.totalSteps
   const stuckIndex = card.methodSteps.findIndex((s) => s === summary.stuckStep)
   const safeStuckIndex = stuckIndex >= 0 ? stuckIndex : Math.max(0, totalSteps - 1)
-  const masteredSteps = summary.completedCount
+  // 完成步骤 = 卡住之前的所有步骤数（从 stuckIndex 推断，保持 UI 一致）
+  const masteredSteps = safeStuckIndex
   const masteryPct = Math.round((masteredSteps / totalSteps) * 100)
 
   return <section className="flow-page summary-v2">
@@ -2858,6 +2897,7 @@ function App() {
   const loginAsNew = () => {
     setUserTier('new')
     setPurchasedIds([])
+    setFreeAttemptsLeft(1) // 切换为新用户演示时重置免费额度
     setShowLogin(false)
     setStudentView('newUserHome')
     setAppView('student')

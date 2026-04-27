@@ -16,7 +16,10 @@ export interface GenerateAnswerResult {
   provider: 'mock' | 'deepseek'
 }
 
-const DEEPSEEK_URL = 'https://api.deepseek.com/v1/chat/completions'
+// Dev 走 vite proxy 绕 CORS；prod 直连
+const DEEPSEEK_URL = import.meta.env.DEV
+  ? '/api/deepseek/v1/chat/completions'
+  : 'https://api.deepseek.com/v1/chat/completions'
 const DEEPSEEK_MODEL = 'deepseek-v4-flash'
 
 export async function generateAnswerWithProvider({
@@ -177,15 +180,20 @@ export async function generateStudySummary({
       .join('\n')
     const sysPrompt = `你是教学分析师。根据师生对话生成「家长摘要」+「学生学习总结」，必须输出严格 JSON：
 {
-  "headline": "一句话概括孩子今天最卡哪一步（≤30字，给家长看）",
+  "headline": "一句话概括孩子今天最卡哪一步（≤35 字，给家长看，要具体说卡在做什么动作上）",
   "stuckStep": "卡住的步骤名（直接抄方法卡里的）",
-  "stuckHint": "X 老师对这一步的提示（≤40字）",
+  "stuckHint": "X 老师对这一步的具体教法（60-80 字，要能指导学生具体怎么做这一步，不要空话）",
   "completedCount": 数字（已走通的步骤数）,
   "totalSteps": 数字（方法卡总步骤数）,
   "minutes": 数字（估计用时分钟，5-15 之间）,
-  "impactScope": "这题考察的物理领域（≤20字）",
-  "nextStepAdvice": "下一步该练什么（≤30字）"
+  "impactScope": "这题考察的物理领域，多个用 / 分隔（≤25 字）",
+  "nextStepAdvice": "下一步该练什么具体题型（≤35 字，要具体）"
 }
+
+stuckHint 例子：
+- ✅ 好："水平面光滑就只有重力和支持力，竖直方向抵消，水平方向无外力——这才能用动量守恒。检查时画一张受力图。"
+- ❌ 差："检查系统在水平方向是否受外力" （太短，没指导）
+
 不要直接给答案，不要承诺提分。基于对话真实判断。`
     const userPrompt = `# 题目\n${problemText}\n\n# 命中方法卡\n${methodCard.topic}\n步骤：${methodCard.methodSteps.join(' → ')}\n常见错误：${methodCard.commonError}\n\n# 对话记录\n${transcript}`
 

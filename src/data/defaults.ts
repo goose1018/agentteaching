@@ -20,3 +20,14 @@ export const knowledgeMastery = [
 
 /** Capture 右侧栏 mock 数据 — 最近 7 天打卡 */
 export const last7DaysBars = [22, 48, 8, 65, 80, 38, 55]
+
+/** 学科列表 — StudentHome 切换条 + SubjectSelect 选择页共用 */
+export interface Subject { name: string; icon: string; status: string }
+export const subjects: Subject[] = [
+  { name: '高中物理', icon: 'F', status: '已开通' },
+  { name: '高中数学', icon: '∑', status: '内测中' },
+  { name: '高中化学', icon: 'H₂', status: '内测中' },
+  { name: '高中生物', icon: 'DNA', status: '即将开放' },
+  { name: '高中语文', icon: '文', status: '招募老师中' },
+  { name: '高中英语', icon: 'EN', status: '招募老师中' },
+]

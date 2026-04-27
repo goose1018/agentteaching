@@ -66,7 +66,7 @@ export async function generateAnswerWithProvider({
         messages,
         temperature: 0.4,
         response_format: { type: 'json_object' },
-        max_tokens: 600,
+        max_tokens: 1500, // 思考模式可能吃掉 reasoning tokens，留足空间给 content
       }),
     })
 
@@ -82,11 +82,11 @@ export async function generateAnswerWithProvider({
     const raw = data.choices?.[0]?.message?.content ?? ''
     const parsed = parseTeacherJson(raw)
 
-    // 兜底：LLM 返回 content 为空时，给一句安全的接住话
+    // 兜底：LLM 返回 content 真为空时，重新开个新提问
     const content = parsed.content?.trim()
-    const safeAnswer = content && content.length > 5
+    const safeAnswer = content && content.length > 0
       ? cleanupLatex(content)
-      : `我刚没接住你这句话。能再说具体点吗？比如你卡在「${methodCard.methodSteps[0] ?? '哪一步'}」这一步，还是哪个判断不确定？`
+      : `（演示版）AI 没返回内容。你可以再发一次或换个问法。debug: raw="${raw.slice(0, 100)}"`
 
     return {
       provider: 'deepseek',

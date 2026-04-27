@@ -1779,13 +1779,32 @@ function Coach({ tutor, session, draft, setDraft, send, step, setStep, card, isT
           {current}
         </h2>
         <div className="coach-actions">
-          <button className="ghost" onClick={() => send(`请提示我「${current}」该怎么判断`)}>
+          <button
+            className="ghost"
+            type="button"
+            onClick={() => send('给我一个提示')}
+            disabled={isThinking}
+          >
             <Lightbulb size={14} /> 提示一下
           </button>
-          <button className="primary" onClick={() => setStep(Math.min(safeStep + 1, card.methodSteps.length - 1))} disabled={isLastStep}>
+          <button
+            className="primary"
+            type="button"
+            onClick={() => {
+              const nextStep = Math.min(safeStep + 1, card.methodSteps.length - 1)
+              setStep(nextStep)
+              send('好，下一步我该做什么？')
+            }}
+            disabled={isLastStep || isThinking}
+          >
             下一步 →
           </button>
-          <button className="ghost" onClick={() => send('看完整解析')}>
+          <button
+            className="ghost"
+            type="button"
+            onClick={() => send('给我看一下完整解题过程')}
+            disabled={isThinking}
+          >
             <BookOpen size={14} /> 看完整解析
           </button>
         </div>
@@ -2821,8 +2840,11 @@ function App() {
     setDraft('')
     setIsThinking(true)
     const card = findMethodCard(text, cards)
-    // 收集历史（最近 6 轮）传给 LLM 做上下文
-    const history = (activeSession?.messages ?? []).slice(-6).map((m) => ({
+    // 过滤掉占位 firstMessage（避免连续两条 assistant 让 LLM 困惑）
+    const realMessages = (activeSession?.messages ?? []).filter(
+      (m) => m.content !== firstMessage.content
+    )
+    const history = realMessages.slice(-6).map((m) => ({
       role: (m.role === 'teacher' ? 'teacher' : 'student') as 'teacher' | 'student',
       content: m.content,
     }))

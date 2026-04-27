@@ -33,7 +33,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import { createAnswerReview, findMethodCard } from './aiTasks'
-import { generateAnswerWithProvider, generateStudySummary, type StudySummaryResult } from './api/deepseek'
+import { getAiClient, type StudySummaryResult } from './api/aiClient'
 import {
   ANSWER_REVIEW_STORAGE_KEY,
   METHOD_CARD_STORAGE_KEY,
@@ -1408,7 +1408,7 @@ function Summary({ diagnosis, card, setView, conversation }: {
 
   useEffect(() => {
     let mounted = true
-    generateStudySummary({
+    getAiClient().generateSummary({
       problemText: diagnosis.text,
       methodCard: card,
       conversation,
@@ -2360,7 +2360,7 @@ function App() {
       role: (m.role === 'teacher' ? 'teacher' : 'student') as 'teacher' | 'student',
       content: m.content,
     }))
-    const result = await generateAnswerWithProvider({
+    const result = await getAiClient().generateAnswer({
       question: text,
       methodCard: card,
       problemText: diagnosis.text,
@@ -2380,7 +2380,7 @@ function App() {
   const kickoffCoach = async () => {
     setIsThinking(true)
     const card = findMethodCard(diagnosis.text, cards)
-    const result = await generateAnswerWithProvider({
+    const result = await getAiClient().generateAnswer({
       question: `[系统启动] 学生刚拍了这道题：${diagnosis.text}\n请按你的方法卡，主动开场——先点出题型，然后明确告诉学生第一步要做什么、要思考什么具体问题。一定要以反问结尾。`,
       methodCard: card,
       problemText: diagnosis.text,

@@ -1,20 +1,12 @@
 import { buildSystemPrompt, buildContextMessage } from './teacherPrompt'
 import type { MethodCard } from '../domain'
-
-export type Evaluation = 'correct' | 'partial' | 'wrong' | null
-
-export interface GenerateAnswerRequest {
-  question: string
-  methodCard: MethodCard
-  problemText?: string
-  history?: Array<{ role: 'student' | 'teacher'; content: string }>
-}
-
-export interface GenerateAnswerResult {
-  answer: string
-  evaluation: Evaluation
-  provider: 'mock' | 'deepseek'
-}
+import type {
+  Evaluation,
+  GenerateAnswerRequest,
+  GenerateAnswerResult,
+  GenerateSummaryRequest,
+  StudySummaryResult,
+} from './aiClient'
 
 // Dev 走 vite proxy 绕 CORS；prod 直连
 const DEEPSEEK_URL = import.meta.env.DEV
@@ -160,24 +152,7 @@ function buildMockAnswer(_question: string, card: MethodCard) {
 }
 
 // ---- 学习总结生成（Summary 页用）
-export interface StudySummaryResult {
-  headline: string          // 一句话概括孩子在哪卡住
-  stuckStep: string         // 卡在第几步的名字
-  stuckHint: string         // 老师对这一步的提示
-  completedCount: number    // 完成步骤数
-  totalSteps: number
-  minutes: number           // 用时
-  impactScope: string       // 影响范围
-  nextStepAdvice: string    // 下一步建议
-  provider: 'mock' | 'deepseek'
-}
-
-export interface GenerateSummaryRequest {
-  problemText: string
-  methodCard: MethodCard
-  conversation: Array<{ role: 'student' | 'teacher'; content: string }>
-  studentName?: string
-}
+//   Types live in ./aiClient — this is the impl.
 
 export async function generateStudySummary({
   problemText,

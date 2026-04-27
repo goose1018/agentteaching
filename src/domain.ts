@@ -212,3 +212,92 @@ export function validateMethodCard(card: MethodCard) {
     missingFields: missingFields.map(([field]) => field),
   }
 }
+
+// ---- 错题本 (P4 + P7) ----------------------------------------------------
+
+export type MistakeStatus = 'open' | 'reviewing' | 'mastered'
+export type SubjectArea = '力学' | '运动学' | '能量' | '电磁学' | '热学' | '光学' | '原子' | '振动'
+
+export interface MistakeRecord {
+  id: string
+  questionText: string
+  topic: string
+  cardId: string
+  difficulty: '易' | '中' | '难'
+  stuckAtStep: number
+  totalSteps: number
+  subjectArea: SubjectArea
+  status: MistakeStatus
+  createdAt: string
+  attemptCount: number
+}
+
+export const MISTAKES_STORAGE_KEY = 'physicspath:mistakes'
+
+export const seedMistakes: MistakeRecord[] = [
+  {
+    id: 'm-001',
+    questionText: '光滑水平面上，小车 A 以 4m/s 向右运动碰上静止的小车 B，碰后两车粘在一起。已知 mA=2kg, mB=3kg，求碰后共同速度。',
+    topic: '动量守恒 · 完全非弹性碰撞',
+    cardId: 'mc-力学-动量守恒-01',
+    difficulty: '中',
+    stuckAtStep: 0,
+    totalSteps: 4,
+    subjectArea: '力学',
+    status: 'open',
+    createdAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
+    attemptCount: 1,
+  },
+  {
+    id: 'm-002',
+    questionText: '一段长为 L=0.5m 的导体棒在磁感应强度 B=0.2T 的匀强磁场中以 v=2m/s 切割磁感线，求感应电动势。',
+    topic: '电磁感应 · 切割磁感线',
+    cardId: 'mc-电磁-感应电动势-01',
+    difficulty: '易',
+    stuckAtStep: 2,
+    totalSteps: 4,
+    subjectArea: '电磁学',
+    status: 'reviewing',
+    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
+    attemptCount: 2,
+  },
+  {
+    id: 'm-003',
+    questionText: '凸透镜焦距 f=10cm，物体距透镜 15cm，求像距和像的性质。',
+    topic: '几何光学 · 凸透镜成像',
+    cardId: 'mc-光学-凸透镜成像-01',
+    difficulty: '易',
+    stuckAtStep: 0,
+    totalSteps: 3,
+    subjectArea: '光学',
+    status: 'mastered',
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    attemptCount: 3,
+  },
+  {
+    id: 'm-004',
+    questionText: '质量 m=0.5kg 的小球从光滑斜面（θ=30°）顶端静止下滑，斜面长 L=4m，求到达底端时速度。',
+    topic: '能量守恒 · 斜面下滑',
+    cardId: 'mc-力学-斜面识别-01',
+    difficulty: '中',
+    stuckAtStep: 1,
+    totalSteps: 4,
+    subjectArea: '力学',
+    status: 'reviewing',
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    attemptCount: 2,
+  },
+  {
+    id: 'm-005',
+    questionText: '一卢瑟福 α 粒子散射实验，α 粒子能量 5MeV，求最近接近金原子核的距离。',
+    topic: '原子物理 · 能量守恒',
+    cardId: 'mc-原子-散射-01',
+    difficulty: '难',
+    stuckAtStep: 1,
+    totalSteps: 3,
+    subjectArea: '原子',
+    status: 'open',
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    attemptCount: 1,
+  },
+]

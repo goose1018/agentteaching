@@ -11,6 +11,7 @@ import { StudentHome } from './components/student/StudentHome'
 import { TeacherList } from './components/student/TeacherList'
 import { TutorDetail } from './components/student/TutorDetail'
 import { Confirm } from './components/student/Confirm'
+import { MistakesPage } from './components/student/MistakesPage'
 import { defaultDiagnosis, subjects } from './data/defaults'
 import {
   ArrowRight,
@@ -38,9 +39,13 @@ import { getAiClient } from './api/aiClient'
 import {
   ANSWER_REVIEW_STORAGE_KEY,
   METHOD_CARD_STORAGE_KEY,
+  MISTAKES_STORAGE_KEY,
   seedHighSchoolCards,
+  seedMistakes,
   type AnswerReview,
   type MethodCard,
+  type MistakeRecord,
+  type SubjectArea,
 } from './domain'
 import seedMethodCards from './seedMethodCards.json'
 import './App.css'
@@ -823,93 +828,6 @@ function Settings({ close, setStudent, resetDemo, switchToNew, switchToPaid, log
     </div>
   )
 }
-// ---- 错题本数据结构（P4 + P7）
-type MistakeStatus = 'open' | 'reviewing' | 'mastered'
-type SubjectArea = '力学' | '运动学' | '能量' | '电磁学' | '热学' | '光学' | '原子' | '振动'
-
-interface MistakeRecord {
-  id: string
-  questionText: string
-  topic: string
-  cardId: string
-  difficulty: '易' | '中' | '难'
-  stuckAtStep: number
-  totalSteps: number
-  subjectArea: SubjectArea
-  status: MistakeStatus
-  createdAt: string
-  attemptCount: number
-}
-
-const MISTAKES_STORAGE_KEY = 'physicspath:mistakes'
-
-const seedMistakes: MistakeRecord[] = [
-  {
-    id: 'm-001',
-    questionText: '光滑水平面上，小车 A 以 4m/s 向右运动碰上静止的小车 B，碰后两车粘在一起。已知 mA=2kg, mB=3kg，求碰后共同速度。',
-    topic: '动量守恒 · 完全非弹性碰撞',
-    cardId: 'mc-力学-动量守恒-01',
-    difficulty: '中',
-    stuckAtStep: 0,
-    totalSteps: 4,
-    subjectArea: '力学',
-    status: 'open',
-    createdAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-    attemptCount: 1,
-  },
-  {
-    id: 'm-002',
-    questionText: '一段长为 L=0.5m 的导体棒在磁感应强度 B=0.2T 的匀强磁场中以 v=2m/s 切割磁感线，求感应电动势。',
-    topic: '电磁感应 · 切割磁感线',
-    cardId: 'mc-电磁-感应电动势-01',
-    difficulty: '易',
-    stuckAtStep: 2,
-    totalSteps: 4,
-    subjectArea: '电磁学',
-    status: 'reviewing',
-    createdAt: new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString(),
-    attemptCount: 2,
-  },
-  {
-    id: 'm-003',
-    questionText: '凸透镜焦距 f=10cm，物体距透镜 15cm，求像距和像的性质。',
-    topic: '几何光学 · 凸透镜成像',
-    cardId: 'mc-光学-凸透镜成像-01',
-    difficulty: '易',
-    stuckAtStep: 0,
-    totalSteps: 3,
-    subjectArea: '光学',
-    status: 'mastered',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    attemptCount: 3,
-  },
-  {
-    id: 'm-004',
-    questionText: '质量 m=0.5kg 的小球从光滑斜面（θ=30°）顶端静止下滑，斜面长 L=4m，求到达底端时速度。',
-    topic: '能量守恒 · 斜面下滑',
-    cardId: 'mc-力学-斜面识别-01',
-    difficulty: '中',
-    stuckAtStep: 1,
-    totalSteps: 4,
-    subjectArea: '力学',
-    status: 'reviewing',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-    attemptCount: 2,
-  },
-  {
-    id: 'm-005',
-    questionText: '一卢瑟福 α 粒子散射实验，α 粒子能量 5MeV，求最近接近金原子核的距离。',
-    topic: '原子物理 · 能量守恒',
-    cardId: 'mc-原子-散射-01',
-    difficulty: '难',
-    stuckAtStep: 1,
-    totalSteps: 3,
-    subjectArea: '原子',
-    status: 'open',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    attemptCount: 1,
-  },
-]
 
 // Mock 学生回答评价（仅 fallback 用；真实评价由 LLM 输出）
 // 默认 null —— 学生没真正回答具体问题时不评价
@@ -929,121 +847,12 @@ function mockEvaluateAnswer(answer: string, card: MethodCard): Evaluation {
   return null
 }
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime()
-  const minutes = Math.floor(diff / 60000)
-  if (minutes < 60) return `${minutes} 分钟前`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours} 小时前`
-  const days = Math.floor(hours / 24)
-  if (days < 7) return `${days} 天前`
-  return new Date(iso).toLocaleDateString('zh-CN')
-}
 
 function SubjectSelect({selected,setSelected,setView}:{selected:string;setSelected:(s:string)=>void;setView:(v:StudentView)=>void}){return <section className="selection-page"><p className="eyebrow">选择科目</p><h1>今天想练哪一科？</h1><div className="subject-grid">{subjects.map(s=><button className={selected===s.name?'active':''} key={s.name} onClick={()=>{setSelected(s.name);setView('teachers')}}><span className="subject-icon">{s.icon}</span><strong>{s.name}</strong><span>{s.status}</span></button>)}</div></section>}
 // Capture / knowledgeMastery / last7DaysBars 已迁移到 components/student/Capture.tsx + data/defaults.ts
 
 // Capture component moved to components/student/Capture.tsx
 
-// ---- 错题本页面（P4 + P7）
-type MistakeFilter = 'all' | 'open' | 'reviewing' | 'mastered'
-
-function MistakesPage({ mistakes, setMistakes, openMistake }: {
-  mistakes: MistakeRecord[]
-  setMistakes: React.Dispatch<React.SetStateAction<MistakeRecord[]>>
-  openMistake: (m: MistakeRecord) => void
-}) {
-  const [filter, setFilter] = useState<MistakeFilter>('all')
-
-  const [pageLoadedAt] = useState(() => Date.now())
-  const filtered = mistakes.filter((m) => filter === 'all' || m.status === filter)
-  const stats = useMemo(() => ({
-    total: mistakes.length,
-    today: mistakes.filter((m) => pageLoadedAt - new Date(m.createdAt).getTime() < 24 * 60 * 60 * 1000).length,
-    open: mistakes.filter((m) => m.status === 'open').length,
-    reviewing: mistakes.filter((m) => m.status === 'reviewing').length,
-    mastered: mistakes.filter((m) => m.status === 'mastered').length,
-  }), [mistakes, pageLoadedAt])
-
-  const markStatus = (id: string, status: MistakeStatus) =>
-    setMistakes((current) => current.map((m) => (m.id === id ? { ...m, status } : m)))
-
-  const statusLabel = (s: MistakeStatus) =>
-    ({ open: '待复习', reviewing: '复习中', mastered: '已掌握' }[s])
-
-  return (
-    <section className="mistakes-page">
-      <header className="page-head">
-        <p className="eyebrow">错题本</p>
-        <h1>把卡过的题，再做一遍</h1>
-        <p className="page-sub">每道错题记录你卡在哪一步、做错过几次。复习一遍才算真的会。</p>
-      </header>
-
-      <div className="mistakes-stats">
-        <div className="stat-cell"><strong>{stats.today}</strong><span>今日新增</span></div>
-        <div className="stat-cell"><strong>{stats.total}</strong><span>错题总数</span></div>
-        <div className="stat-cell tone-amber"><strong>{stats.open + stats.reviewing}</strong><span>待复习</span></div>
-        <div className="stat-cell tone-success"><strong>{stats.mastered}</strong><span>已掌握</span></div>
-      </div>
-
-      <div className="mistakes-filters">
-        {([
-          ['all', `全部 ${stats.total}`],
-          ['open', `待复习 ${stats.open}`],
-          ['reviewing', `复习中 ${stats.reviewing}`],
-          ['mastered', `已掌握 ${stats.mastered}`],
-        ] as [MistakeFilter, string][]).map(([key, label]) => (
-          <button
-            key={key}
-            className={`filter-tab ${filter === key ? 'active' : ''}`}
-            onClick={() => setFilter(key)}
-            type="button"
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className="mistakes-list">
-        {filtered.length === 0 && (
-          <div className="empty-tip">这一筛选下没有错题。点「全部」看其他。</div>
-        )}
-        {filtered.map((m) => (
-          <article className={`mistake-card status-${m.status}`} key={m.id}>
-            <div className="mistake-meta">
-              <span className="topic-tag">{m.subjectArea}</span>
-              <span className="diff-tag" data-diff={m.difficulty}>{m.difficulty}</span>
-              <span className={`status-tag ${m.status}`}>{statusLabel(m.status)}</span>
-              <span className="when">{timeAgo(m.createdAt)} · 第 {m.attemptCount} 次</span>
-            </div>
-            <strong className="mistake-topic">{m.topic}</strong>
-            <p className="mistake-question">{m.questionText}</p>
-            {m.status !== 'mastered' && (
-              <p className="mistake-stuck">
-                ⚠ 你卡在第 {m.stuckAtStep + 1}/{m.totalSteps} 步
-              </p>
-            )}
-            <div className="mistake-actions">
-              <button className="primary" type="button" onClick={() => openMistake(m)}>
-                <Pencil size={13} /> 再做一遍
-              </button>
-              {m.status !== 'mastered' && (
-                <button className="ghost" type="button" onClick={() => markStatus(m.id, 'mastered')}>
-                  <CheckCircle2 size={13} /> 标记已掌握
-                </button>
-              )}
-              {m.status === 'mastered' && (
-                <button className="ghost" type="button" onClick={() => markStatus(m.id, 'reviewing')}>
-                  重新加入复习
-                </button>
-              )}
-            </div>
-          </article>
-        ))}
-      </div>
-    </section>
-  )
-}
 
 interface TeacherProps {
   view: TeacherView

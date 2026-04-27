@@ -57,8 +57,7 @@ export async function generateAnswerWithProvider({
         model: DEEPSEEK_MODEL,
         messages,
         temperature: 0.4,
-        response_format: { type: 'json_object' },
-        max_tokens: 1500, // 思考模式可能吃掉 reasoning tokens，留足空间给 content
+        max_tokens: 900,
       }),
     })
 
@@ -74,7 +73,7 @@ export async function generateAnswerWithProvider({
 
     const message = data.choices?.[0]?.message
     const raw = message?.content ?? ''
-    const parsed = parseTeacherJson(raw)
+    const parsed = parseTeacherOutput(raw)
 
     // 兜底：永远不要把 reasoning_content 展示给学生；那是模型内部草稿。
     const content = parsed.content?.trim()
@@ -128,7 +127,7 @@ function cleanupLatex(text: string): string {
   return out
 }
 
-function parseTeacherJson(raw: string): TeacherJson {
+function parseTeacherOutput(raw: string): TeacherJson {
   if (!raw.trim()) return { content: '', evaluation: null }
   try {
     const cleaned = raw
@@ -137,24 +136,34 @@ function parseTeacherJson(raw: string): TeacherJson {
       .replace(/\s*```$/i, '')
     const start = cleaned.indexOf('{')
     const end = cleaned.lastIndexOf('}')
+    if (start < 0 || end <= start) {
+      return { content: stripMetaTalk(cleaned), evaluation: null }
+    }
     const jsonText = cleaned.startsWith('{')
       ? cleaned
-      : start >= 0 && end > start
-        ? cleaned.slice(start, end + 1)
-        : ''
-    if (!jsonText) return { content: cleaned, evaluation: null }
+      : cleaned.slice(start, end + 1)
     const obj = JSON.parse(jsonText) as { content?: string; evaluation?: string }
     const evaluation = (['correct', 'partial', 'wrong'].includes(obj.evaluation ?? '')
       ? obj.evaluation
       : null) as Evaluation
     return {
-      content: typeof obj.content === 'string' ? obj.content : '',
+      content: typeof obj.content === 'string' ? stripMetaTalk(obj.content) : '',
       evaluation,
     }
   } catch {
-    // JSON 解析失败：直接把 raw 当文本返回
-    return { content: raw, evaluation: null }
+    // JSON 解析失败：直接把 raw 当文本返回。聊天场景优先保证老师能正常说话。
+    return { content: stripMetaTalk(raw), evaluation: null }
   }
+}
+
+function stripMetaTalk(text: string): string {
+  return text
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .replace(/^\s*(content|answer|analysis|reasoning)\s*[:：]\s*/i, '')
+    .replace(/^我先按思路接住这一步[:：]?\s*/i, '')
+    .replace(/^根据(教学原则|题目|方法卡).*?[，,]\s*/i, '')
+    .trim()
 }
 
 function buildMockAnswer(_question: string, card: MethodCard) {

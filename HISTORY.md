@@ -272,6 +272,12 @@ LoginModal
    - 修复：前端永远不展示 `reasoning_content`；空 content 只给一句老师式兜底追问。`teacherPrompt` 和 Coach 按钮 prompt 也新增“禁止复述内部意图/系统指令/我们需要/学生点了/被要求”等规则。
    - 同时删除 `[deepseek raw response]` 这类浏览器 console 调试日志，避免演示时暴露内部返回结构。
 
+8. **四次修正：聊天回答取消强制 JSON**
+   - 现象：DeepSeek V4-Flash 在 `response_format: json_object` 下经常把可见 `message.content` 置空或输出不稳定，导致前端反复走兜底句「我换个问法…」，看起来像 AI 一直复读。
+   - 修复：`generateAnswerWithProvider()` 的聊天回答不再传 `response_format: json_object`，`teacherPrompt` 改为直接输出老师要对学生说的话；只在 Summary 这类结构化报告里保留 JSON。
+   - 取舍：聊天评价 `evaluation` 不再强依赖 LLM JSON，前端继续用本地 `mockEvaluateAnswer()` 兜底。优先保证“老师能正常讲题”，而不是优先拿结构化字段。
+   - 同时将 Coach 按钮 prompt 从“内部意图：hint/next”改成学生视角请求，减少模型复述内部控制词。
+
 验证：本次修复后已跑 `npm run lint` 和 `npm run build`，均通过。Build 仍有大 chunk warning，属于后续代码分割/懒加载优化项，不阻塞演示。
 
 ---

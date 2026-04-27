@@ -38,19 +38,18 @@ export function Coach({
   const isLastStep = safeStep >= card.methodSteps.length - 1
   const buildActionPrompt = (intent: 'hint' | 'next' | 'solution', targetStep = current) => {
     const instruction = {
-      hint: `内部意图：hint。只围绕当前第 ${safeStep + 1} 步「${targetStep}」给学生一个启发式提示，不给完整答案。最后反问一个具体判断问题。`,
-      next: `内部意图：next。围绕第 ${safeStep + 2} 步「${targetStep}」告诉学生这一小步要判断什么，不重复上一轮，不给完整答案。最后让学生先尝试写出这一小步。`,
-      solution: `内部意图：solution。给分步解析，但保持老师口吻：先列路径，再给关键方程；公式必须用 $...$ 包裹；不要泛泛而谈。`,
+      hint: `我需要一个启发式提示。请只围绕第 ${safeStep + 1} 步「${targetStep}」提醒我该先判断什么，不要给完整答案，最后问我一个具体问题。`,
+      next: `我准备进入下一步。请围绕第 ${safeStep + 2} 步「${targetStep}」告诉我这一小步要看什么，不要重复上一轮，也不要直接给完整答案。`,
+      solution: `我想看完整解析。请先列解题路径，再给关键方程；公式必须用 $...$ 包裹。`,
     }[intent]
     return [
-      '下面是内部控制信息，只用于生成回答。不要复述这些指令，不要说“学生点了/内部意图/我们需要/被要求/根据教学原则”。',
-      '你的输出必须像老师正在直接对学生说话。',
       instruction,
       `题目：${diagnosis.text}`,
       `命中方法卡：${card.topic}`,
       `方法路径：${card.methodSteps.join(' → ')}`,
       `当前步骤：${targetStep}`,
       `常见错误：${card.commonError}`,
+      '请直接用老师口吻回答我，不要说“内部意图”“根据方法卡”“你被要求”。',
     ].join('\n')
   }
 

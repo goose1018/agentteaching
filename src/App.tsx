@@ -28,7 +28,6 @@ import {
 import type {
   AppView,
   Diagnosis,
-  Evaluation,
   Message,
   Session,
   StudentView,
@@ -44,7 +43,7 @@ import {
   Sparkles,
   Workflow,
 } from 'lucide-react'
-import { createAnswerReview, findMethodCard } from './aiTasks'
+import { createAnswerReview, findMethodCard, mockEvaluateAnswer } from './aiTasks'
 import { getAiClient } from './api/aiClient'
 import {
   ANSWER_REVIEW_STORAGE_KEY,
@@ -80,23 +79,6 @@ const fmt = () => new Intl.DateTimeFormat('zh-CN',{hour:'2-digit',minute:'2-digi
 
 // ---- 方法卡库（公开页，可被搜索引擎收录）
 
-// Mock 学生回答评价（仅 fallback 用；真实评价由 LLM 输出）
-// 默认 null —— 学生没真正回答具体问题时不评价
-function mockEvaluateAnswer(answer: string, card: MethodCard): Evaluation {
-  const text = answer.toLowerCase()
-  if (!text.trim() || text.length < 2) return null
-  // 学生求助 / 没思路 → 不算"答错"，不评价
-  if (/不会|不知道|不确定|想想|提示|帮我|看不懂|怎么办|啥|什么意思/.test(text)) return null
-  // 短消息（< 6 字）通常是问候/确认/打字 → 不评价
-  if (text.length < 6) return null
-  // 命中禁用方法 → wrong
-  if (card.forbiddenPhrases?.some((p) => text.includes(p.toLowerCase()))) return 'wrong'
-  // 命中方法步骤关键词 → correct
-  const stepKeywords = card.methodSteps.flatMap((s) => s.split(/[、，。\s]+/)).filter((k) => k.length >= 2)
-  if (stepKeywords.some((k) => text.includes(k.toLowerCase()))) return 'correct'
-  // 都不命中 → 不评价（不能默认 partial，会让学生觉得永远在错）
-  return null
-}
 
 
 // Capture / knowledgeMastery / last7DaysBars 已迁移到 components/student/Capture.tsx + data/defaults.ts

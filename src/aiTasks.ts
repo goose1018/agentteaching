@@ -1,4 +1,5 @@
 import type { AnswerReview, MethodCard, RecognitionResult } from './domain'
+import type { Evaluation } from './types'
 
 export function recognizeProblemImage(fileName: string): RecognitionResult {
   const isLowConfidence = /blur|模糊|draft|草稿/i.test(fileName)
@@ -42,6 +43,24 @@ ${card.teacherMove}
     answer,
     tags: [card.topic, '命中方法卡', card.status === 'approved' ? '已审核' : '待审核'],
   }
+}
+
+// Mock 学生回答评价（仅 fallback 用；真实评价由 LLM 输出）
+// 默认 null —— 学生没真正回答具体问题时不评价
+export function mockEvaluateAnswer(answer: string, card: MethodCard): Evaluation {
+  const text = answer.toLowerCase()
+  if (!text.trim() || text.length < 2) return null
+  // 学生求助 / 没思路 → 不算"答错"，不评价
+  if (/不会|不知道|不确定|想想|提示|帮我|看不懂|怎么办|啥|什么意思/.test(text)) return null
+  // 短消息（< 6 字）通常是问候/确认/打字 → 不评价
+  if (text.length < 6) return null
+  // 命中禁用方法 → wrong
+  if (card.forbiddenPhrases?.some((p) => text.includes(p.toLowerCase()))) return 'wrong'
+  // 命中方法步骤关键词 → correct
+  const stepKeywords = card.methodSteps.flatMap((s) => s.split(/[、，。\s]+/)).filter((k) => k.length >= 2)
+  if (stepKeywords.some((k) => text.includes(k.toLowerCase()))) return 'correct'
+  // 都不命中 → 不评价（不能默认 partial，会让学生觉得永远在错）
+  return null
 }
 
 export function createAnswerReview(question: string, answer: string, card: MethodCard): AnswerReview {

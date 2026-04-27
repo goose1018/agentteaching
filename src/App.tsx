@@ -21,6 +21,7 @@ import {
   Mic,
   Pencil,
   PencilLine,
+  Send,
   Settings as SettingsIcon,
   ShieldCheck,
   Sparkles,
@@ -28,7 +29,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import { createAnswerReview, findMethodCard, recognizeProblemImage } from './aiTasks'
-import { generateAnswerWithProvider } from './aiProvider'
+import { generateAnswerWithProvider, generateStudySummary, type StudySummaryResult } from './aiProvider'
 import {
   ANSWER_REVIEW_STORAGE_KEY,
   METHOD_CARD_STORAGE_KEY,
@@ -1125,19 +1126,22 @@ const seedMistakes: MistakeRecord[] = [
   },
 ]
 
-// Mock 学生回答评价（接 LLM 后由 AI 输出，目前根据关键词匹配）
+// Mock 学生回答评价（仅 fallback 用；真实评价由 LLM 输出）
+// 默认 null —— 学生没真正回答具体问题时不评价
 function mockEvaluateAnswer(answer: string, card: MethodCard): Evaluation {
   const text = answer.toLowerCase()
   if (!text.trim() || text.length < 2) return null
-  // 包含「不会 / 不知道 / 不确定 / 我先想想」类 → partial
-  if (/不会|不知道|不确定|想想|提示|帮我|看不懂/.test(text)) return 'partial'
-  // 包含跟方法卡 forbiddenPhrases 重合的 → wrong
+  // 学生求助 / 没思路 → 不算"答错"，不评价
+  if (/不会|不知道|不确定|想想|提示|帮我|看不懂|怎么办|啥|什么意思/.test(text)) return null
+  // 短消息（< 6 字）通常是问候/确认/打字 → 不评价
+  if (text.length < 6) return null
+  // 命中禁用方法 → wrong
   if (card.forbiddenPhrases?.some((p) => text.includes(p.toLowerCase()))) return 'wrong'
-  // 包含方法步骤里的关键词 → correct
+  // 命中方法步骤关键词 → correct
   const stepKeywords = card.methodSteps.flatMap((s) => s.split(/[、，。\s]+/)).filter((k) => k.length >= 2)
   if (stepKeywords.some((k) => text.includes(k.toLowerCase()))) return 'correct'
-  // 默认 partial
-  return 'partial'
+  // 都不命中 → 不评价（不能默认 partial，会让学生觉得永远在错）
+  return null
 }
 
 function timeAgo(iso: string): string {
@@ -1781,46 +1785,100 @@ function Coach({ tutor, session, draft, setDraft, send, step, setStep, card, isT
         )}
       </div>
 
-      {/* 底部 sticky 输入栏 */}
+      {/* 底部 sticky 输入栏 — 拍新题（左小） + 输入框 + 发送（主 CTA） */}
       <div className="coach-input">
+        <button
+          className="coach-mini-btn"
+          type="button"
+          aria-label="拍新题"
+          onClick={() => setView('capture')}
+          title="换一道新题"
+        >
+          <Camera size={18} />
+        </button>
         <input
           type="text"
           className="coach-text-input"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); send(draft) } }}
-          placeholder="说说你这一步的想法…"
+          onKeyDown={(e) => { if (e.key === 'Enter' && draft.trim()) { e.preventDefault(); send(draft) } }}
+          placeholder="说说你这一步的想法… 按 Enter 或点发送"
+          disabled={isThinking}
         />
         <button
-          className="coach-camera-btn"
+          className="coach-send-btn"
           type="button"
-          aria-label="拍新题"
-          onClick={() => setView('capture')}
-          title="拍新题"
+          aria-label="发送"
+          onClick={() => draft.trim() && send(draft)}
+          disabled={!draft.trim() || isThinking}
+          title="发送"
         >
-          <Camera />
+          <Send size={18} />
         </button>
       </div>
     </div>
   )
 }
-function Summary({ diagnosis, card, setView, step }: { diagnosis: Diagnosis; card: MethodCard; setView: (v: StudentView) => void; step: number }) {
-  const totalSteps = card.methodSteps.length
-  const safeStep = Math.min(Math.max(step, 0), totalSteps - 1)
-  const stuckIndex = safeStep
-  const masteredSteps = Math.max(safeStep, 1)
+function Summary({ diagnosis, card, setView, conversation }: {
+  diagnosis: Diagnosis
+  card: MethodCard
+  setView: (v: StudentView) => void
+  conversation: Array<{ role: 'student' | 'teacher'; content: string }>
+}) {
+  const [summary, setSummary] = useState<StudySummaryResult | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    generateStudySummary({
+      problemText: diagnosis.text,
+      methodCard: card,
+      conversation,
+    }).then((s) => {
+      if (mounted) {
+        setSummary(s)
+        setLoading(false)
+      }
+    })
+    return () => { mounted = false }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [card.id])
+
+  if (loading || !summary) {
+    return (
+      <section className="flow-page summary-v2">
+        <header className="summary-topbar">
+          <div>
+            <p className="eyebrow">学习总结</p>
+            <h1>正在生成总结…</h1>
+            <p className="page-sub">X 老师在分析这次对话，请稍等几秒。</p>
+          </div>
+        </header>
+        <div className="summary-loading">
+          <span className="loader-spinner" />
+          <p>基于本次对话生成家长摘要中…</p>
+        </div>
+      </section>
+    )
+  }
+
+  const totalSteps = summary.totalSteps
+  const stuckIndex = card.methodSteps.findIndex((s) => s === summary.stuckStep)
+  const safeStuckIndex = stuckIndex >= 0 ? stuckIndex : Math.max(0, totalSteps - 1)
+  const masteredSteps = summary.completedCount
   const masteryPct = Math.round((masteredSteps / totalSteps) * 100)
+
   return <section className="flow-page summary-v2">
     <header className="summary-topbar">
       <div>
         <p className="eyebrow">学习总结</p>
         <h1>本题你学会了什么？</h1>
-        <p className="page-sub">沿着X 老师的方法走完了 {totalSteps} 步，下面把这条路径标出来给你看。</p>
+        <p className="page-sub">{summary.headline}</p>
       </div>
       <div className="summary-meta-strip">
-        <span className="pill pill-paper"><Clock size={13}/> 用时 8 分钟</span>
-        <span className="pill pill-paper"><CheckCircle2 size={13}/> {totalSteps} / {totalSteps} 步</span>
-        <span className="pill pill-success">识别置信度 {Math.round(diagnosis.confidence*100)}%</span>
+        <span className="pill pill-paper"><Clock size={13}/> 用时 {summary.minutes} 分钟</span>
+        <span className="pill pill-paper"><CheckCircle2 size={13}/> {masteredSteps} / {totalSteps} 步</span>
+        <span className="pill pill-success">{summary.provider === 'deepseek' ? 'X 老师方法卡引导' : '本地分析'}</span>
       </div>
     </header>
 
@@ -1834,28 +1892,27 @@ function Summary({ diagnosis, card, setView, step }: { diagnosis: Diagnosis; car
             <div className="pc-tags">
               <span className="pill pill-ink">{card.subject}</span>
               <span className="pill pill-ink">{diagnosis.difficulty}</span>
-              <span className="pill pill-ink">第 12 次诊断</span>
             </div>
           </div>
         </div>
 
         <div className="pc-track">
-          {card.methodSteps.map((step, i) => {
-            const stuck = i === stuckIndex
+          {card.methodSteps.map((stepName, i) => {
+            const stuck = i === safeStuckIndex
+            const done = i < safeStuckIndex || (i === safeStuckIndex && masteredSteps > i)
             return (
-              <div className={`pc-step done ${stuck ? 'stuck' : ''}`} key={step}>
+              <div className={`pc-step ${done ? 'done' : ''} ${stuck ? 'stuck' : ''}`} key={stepName}>
                 <span className="pc-bullet">{stuck ? '!' : i+1}</span>
-                <div className="pc-name">{step}</div>
+                <div className="pc-name">{stepName}</div>
                 {stuck ? (
                   <>
                     <div className="pc-note">这一步是你今天卡住的地方。</div>
                     <div className="pc-callout">
-                      <b>常见错误：</b>{card.commonError}
-                      <br/>{card.teacherMove}
+                      <b>X 老师提示：</b>{summary.stuckHint}
                     </div>
                   </>
                 ) : (
-                  <div className="pc-note">已走完</div>
+                  <div className="pc-note">{done ? '已走完' : '尚未走到'}</div>
                 )}
               </div>
             )
@@ -1863,7 +1920,7 @@ function Summary({ diagnosis, card, setView, step }: { diagnosis: Diagnosis; car
         </div>
 
         <div className="pc-foot">
-          <div className="pcf-text">下一步：再练 <b>2 道</b> {card.topic}同类题，重点是 <b>{card.methodSteps[stuckIndex]}</b>。</div>
+          <div className="pcf-text">下一步：{summary.nextStepAdvice}</div>
           <button className="btn-primary" onClick={()=>setView('pricing')}>开始练习 <ArrowRight size={14}/></button>
         </div>
       </div>
@@ -1875,16 +1932,16 @@ function Summary({ diagnosis, card, setView, step }: { diagnosis: Diagnosis; car
           <span className="pill pill-amber"><span className="dot"/>待发送</span>
         </div>
 
-        <p className="ps-headline">孩子卡在 <span className="key">{diagnosis.stuck[0]}</span>，方法路径其余 {masteredSteps} 步走得稳。</p>
+        <p className="ps-headline">{summary.headline}</p>
 
         <div className="ps-grid2">
           <div className="ps-cell">
             <div className="lab">本题用时</div>
-            <div className="val">8<small>分钟</small></div>
+            <div className="val">{summary.minutes}<small>分钟</small></div>
           </div>
           <div className="ps-cell">
             <div className="lab">完成步骤</div>
-            <div className="val">{totalSteps}<small>/ {totalSteps}</small></div>
+            <div className="val">{masteredSteps}<small>/ {totalSteps}</small></div>
           </div>
           <div className="ps-cell span2">
             <div className="lab">方法掌握度</div>
@@ -1895,15 +1952,15 @@ function Summary({ diagnosis, card, setView, step }: { diagnosis: Diagnosis; car
 
         <div className="ps-block">
           <div className="lab">影响范围</div>
-          <div className="val">牛顿第二定律 · 动量 · 能量综合题</div>
+          <div className="val">{summary.impactScope}</div>
         </div>
 
         <div className="ps-block">
           <div className="lab">下一步建议</div>
-          <div className="val">练 <b>3 道「{card.methodSteps[stuckIndex]}」专项题</b>，重点训练第一步判断。</div>
+          <div className="val">{summary.nextStepAdvice}</div>
         </div>
 
-        <p className="ps-trust">由X 老师审核的「{card.topic}方法卡」引导 · 本周第 5 次对话 · 不承诺提分、不押题。</p>
+        <p className="ps-trust">由X 老师审核的「{card.topic}方法卡」引导 · 不承诺提分、不押题。</p>
 
         <div className="ps-actions">
           <button className="btn-primary"><Mail size={14}/> 发送给家长</button>
@@ -2734,6 +2791,37 @@ function App() {
     setIsThinking(false)
   }
 
+  // Coach 开场：第一次进 coach 时让 AI 基于题目主动给出第一句引导
+  const kickoffCoach = async () => {
+    setIsThinking(true)
+    const card = findMethodCard(diagnosis.text, cards)
+    const result = await generateAnswerWithProvider({
+      question: `[系统启动] 学生刚拍了这道题：${diagnosis.text}\n请按你的方法卡，主动开场——先点出题型，然后明确告诉学生第一步要做什么、要思考什么具体问题。一定要以反问结尾。`,
+      methodCard: card,
+      problemText: diagnosis.text,
+      history: [],
+    })
+    setMessages((current) => [
+      ...current,
+      { id: crypto.randomUUID(), role: 'teacher', content: result.answer, time: fmt(), tags: [card.topic], evaluation: null },
+    ])
+    setIsThinking(false)
+  }
+
+  // 进 coach 时如果只有默认开场消息，自动让 AI 基于题目重新开场
+  useEffect(() => {
+    if (studentView !== 'coach') return
+    if (!activeSession) return
+    // 只在 session 仅含默认开场（teacher role 单条）时触发
+    const hasOnlyOpener = activeSession.messages.length === 1 &&
+      activeSession.messages[0].role === 'teacher' &&
+      !activeSession.messages[0].evaluation // 排除已 kickoff 过的
+    if (hasOnlyOpener && diagnosis.text) {
+      void Promise.resolve().then(() => kickoffCoach())
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studentView, activeSession?.id])
+
   // 假支付：弹成功 modal，确认后升级为 paid 用户并跳 home
   const handleSubscribe = (plan: 'month' | 'year') => {
     setShowPaySuccess(plan)
@@ -2977,7 +3065,17 @@ function App() {
             }}
           />
         )}
-        {studentView === 'summary' && <Summary diagnosis={diagnosis} card={methodCard} setView={setStudentView} step={step} />}
+        {studentView === 'summary' && (
+          <Summary
+            diagnosis={diagnosis}
+            card={methodCard}
+            setView={setStudentView}
+            conversation={(activeSession?.messages ?? []).map((m) => ({
+              role: (m.role === 'teacher' ? 'teacher' : 'student') as 'student' | 'teacher',
+              content: m.content,
+            }))}
+          />
+        )}
         {studentView === 'pricing' && <Pricing tutor={selectedTutor} onSubscribe={handleSubscribe} />}
         {studentView === 'mistakes' && (
           <MistakesPage

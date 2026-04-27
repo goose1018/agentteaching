@@ -107,6 +107,23 @@ let cached: AiClient | null = null
 export function getAiClient(): AiClient {
   if (cached) return cached
   const useProxy = import.meta.env.VITE_AI_PROXY === 'true'
+
+  // 🚨 Build-time security guard — see HISTORY.md §8 deployment checklist.
+  //   Setting VITE_AI_PROXY=true alone is NOT enough. The directDeepSeekClient
+  //   code is still in the bundle (no tree-shake — both impls are imported).
+  //   If VITE_DEEPSEEK_API_KEY is also set during build, Vite inlines its
+  //   literal value into dist/, exposing the key to anyone who opens devtools.
+  //   Production build environments MUST set VITE_AI_PROXY=true AND ensure
+  //   VITE_DEEPSEEK_API_KEY is unset.
+  if (useProxy && import.meta.env.VITE_DEEPSEEK_API_KEY) {
+    console.error(
+      '[aiClient] 🚨 SECURITY: VITE_AI_PROXY=true but VITE_DEEPSEEK_API_KEY ' +
+      'is also set in build env. The DeepSeek key is now inlined in this bundle ' +
+      'and visible to any user. Remove VITE_DEEPSEEK_API_KEY from the production ' +
+      'build environment, rebuild, and rotate the leaked key in the DeepSeek console.'
+    )
+  }
+
   cached = useProxy ? proxyAiClient : directDeepSeekClient
   return cached
 }

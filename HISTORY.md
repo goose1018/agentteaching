@@ -211,9 +211,13 @@ LoginModal
 - **API key 暴露风险** —— `VITE_DEEPSEEK_API_KEY` 会被 Vite 打进 bundle，**部署后任何用户可在 devtools 里看到**
   - **Demo 阶段可接受**：本仓库 `HISTORY §1` 标注"暂不部署"；只要不公开部署到带域名的生产环境就行
   - **公开部署前必做 checklist**：
-    1. 抽 `aiClient` 接口，把 `directDeepSeekClient`（dev）和 `proxyAiClient`（prod）切开
-    2. 后端起一个最小 chat-proxy endpoint（Node / Python 都行），key 只在后端读环境变量
-    3. 前端 build 时通过 `VITE_AI_PROXY=true` 切到 proxy 实现，**确认 bundle 里 grep 不到 `sk-` / `VITE_DEEPSEEK_API_KEY` 字面量**才能上线
+    1. ✅ 已做 — `aiClient` 接口已抽（`api/aiClient.ts`），`directDeepSeekClient`（dev）和 `proxyAiClient`（prod）已分开，commit `b4d7c2e`
+    2. 后端起一个最小 chat-proxy endpoint（Node / Python 都行），key 只在后端读环境变量（如 `DEEPSEEK_API_KEY`，**不带 `VITE_` 前缀**）
+    3. 前端 build 环境**必须同时**：
+       - 设置 `VITE_AI_PROXY=true`（切到 proxy 实现）
+       - **删除 `VITE_DEEPSEEK_API_KEY`**（即使切了 proxy flag，只要这个变量还在构建环境里，Vite 仍会把 key 字面量内联进 bundle —— `directDeepSeekClient` 那段代码还在 bundle 里没被 tree-shake）
+       - `aiClient.getAiClient()` 里有运行时 console.error 检测这种危险组合，部署前打开 devtools 确认没报警
+       - 上线前必须 grep dist：`grep -r "sk-" dist/ ; grep -r "VITE_DEEPSEEK_API_KEY" dist/`，两个都为空才能发
     4. 旧 key 立即在 DeepSeek 控制台 revoke + 轮换新 key
 - **vision API 没有** —— 学生只能粘贴文字
 

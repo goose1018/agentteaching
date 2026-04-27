@@ -274,9 +274,10 @@ LoginModal
 
 8. **四次修正：聊天回答取消强制 JSON**
    - 现象：DeepSeek V4-Flash 在 `response_format: json_object` 下经常把可见 `message.content` 置空或输出不稳定，导致前端反复走兜底句「我换个问法…」，看起来像 AI 一直复读。
-   - 修复：`generateAnswerWithProvider()` 的聊天回答不再传 `response_format: json_object`，`teacherPrompt` 改为直接输出老师要对学生说的话；只在 Summary 这类结构化报告里保留 JSON。
+   - 修复：`generateAnswerWithProvider()` 的聊天回答不再传 `response_format: json_object`，`teacherPrompt` 改为直接输出老师要对学生说的话；只在 Summary 这类结构化报告里保留 JSON。聊天 `max_tokens` 保持 `3000`，因为 V4-Flash 的 reasoning 会先消耗一部分输出预算，900/1500 都容易把可见 content 挤没。
    - 取舍：聊天评价 `evaluation` 不再强依赖 LLM JSON，前端继续用本地 `mockEvaluateAnswer()` 兜底。优先保证“老师能正常讲题”，而不是优先拿结构化字段。
    - 同时将 Coach 按钮 prompt 从“内部意图：hint/next”改成学生视角请求，减少模型复述内部控制词。
+   - 诊断：保留 `[deepseek diag]`，但只在 dev 环境输出，用来观察 `finish_reason / raw_len / reasoning_len / usage`；演示和未来生产环境不应依赖它。
 
 验证：本次修复后已跑 `npm run lint` 和 `npm run build`，均通过。Build 仍有大 chunk warning，属于后续代码分割/懒加载优化项，不阻塞演示。
 

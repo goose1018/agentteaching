@@ -57,7 +57,9 @@ export async function generateAnswerWithProvider({
         model: DEEPSEEK_MODEL,
         messages,
         temperature: 0.4,
-        max_tokens: 900,
+        // V4-Flash 默认开思考模式，reasoning_content 会先吃掉一大块预算。
+        // 900 太小、1500 也勉强；3000 给思考留头部，给 content 留够。
+        max_tokens: 3000,
       }),
     })
 
@@ -74,6 +76,19 @@ export async function generateAnswerWithProvider({
     const message = data.choices?.[0]?.message
     const raw = message?.content ?? ''
     const parsed = parseTeacherOutput(raw)
+
+    // Dev-only diagnostic: useful when DeepSeek returns empty content.
+    if (import.meta.env.DEV) {
+      console.log('[deepseek diag]', {
+        finish_reason: data.choices?.[0]?.finish_reason,
+        raw_len: raw.length,
+        raw_preview: raw.slice(0, 200),
+        reasoning_len: (message?.reasoning_content ?? '').length,
+        reasoning_preview: (message?.reasoning_content ?? '').slice(0, 200),
+        parsed_content_len: parsed.content.length,
+        usage: data.usage,
+      })
+    }
 
     // 兜底：永远不要把 reasoning_content 展示给学生；那是模型内部草稿。
     const content = parsed.content?.trim()

@@ -37,11 +37,12 @@ import {
   type MethodCard,
 } from './domain'
 import seedMethodCards from './seedMethodCards.json'
+import { SealRound, SealSquare } from './icons/StampSeal'
 import './App.css'
 import './App.patch.css'
 
 type AppView = 'welcome' | 'student' | 'teacher'
-type StudentView = 'home' | 'capture' | 'confirm' | 'coach' | 'summary' | 'pricing' | 'subjects' | 'teachers' | 'teacherDetail' | 'methodLibrary' | 'methodCardDetail' | 'tutorStory' | 'mistakes'
+type StudentView = 'home' | 'newUserHome' | 'capture' | 'confirm' | 'coach' | 'summary' | 'pricing' | 'subjects' | 'teachers' | 'teacherDetail' | 'methodLibrary' | 'methodCardDetail' | 'tutorStory' | 'mistakes'
 type TeacherView = 'home' | 'upload' | 'train' | 'methods' | 'review' | 'records' | 'publish' | 'quality'
 type Role = 'student' | 'teacher'
 
@@ -245,64 +246,309 @@ function Tex({ children }: { children: string }) {
   return <span className="tex-host" dangerouslySetInnerHTML={{ __html: renderFormulaSegments(children) }} />
 }
 
-// ---- 对话回放占位组件（30 秒预设对话样片）
-interface ReplayLine { role: Role; text: string }
-const liuReplayScript: ReplayLine[] = [
-  { role: 'student', text: '老师，光滑斜面上的物块沿斜面下滑，加速度怎么算？' },
-  { role: 'teacher', text: '别急。先做一件事：把重力沿斜面方向和垂直方向分解。沿斜面方向你写出来是什么？' },
-  { role: 'student', text: '$mg \\sin\\theta$？' },
-  { role: 'teacher', text: '对。光滑斜面没有摩擦，沿斜面方向的合力就是 $mg \\sin\\theta$。牛顿第二定律一列就出来：$a = g \\sin\\theta$。' },
-  { role: 'teacher', text: '记住这条路径——分解、列方程、解。下次见到斜面题，先想这三步，不要先翻公式。' },
-]
+// ChatReplay 组件已被 Slide 3 内联 chat-card 取代
 
-function ChatReplay({ tutor, script = liuReplayScript }: { tutor: Tutor; script?: ReplayLine[] }) {
-  const [playing, setPlaying] = useState(false)
-  const [shown, setShown] = useState<number>(script.length)
-  useEffect(() => {
-    if (!playing) return
-    const timers: number[] = []
-    for (let i = 2; i <= script.length; i++) {
-      timers.push(window.setTimeout(() => setShown(i), (i - 1) * 1400))
-    }
-    timers.push(window.setTimeout(() => setPlaying(false), script.length * 1400))
-    return () => timers.forEach(window.clearTimeout)
-  }, [playing, script.length])
-  const play = () => {
-    setShown(1)
-    setPlaying(true)
-  }
+// ---- Mock 登录 modal（演示用，一点就进）
+function LoginModal({ close, onLoginNew, onLoginPaid }: {
+  close: () => void
+  onLoginNew: () => void
+  onLoginPaid: () => void
+}) {
   return (
-    <div className="chat-replay">
-      <div className="chat-replay-head">
-        <span className="eyebrow">试讲片段 · 30 秒</span>
-        <button className="ghost" type="button" onClick={play}>
-          ▶ 重播
-        </button>
-      </div>
-      <div className="chat-replay-body">
-        {script.slice(0, shown).map((line, i) => (
-          <div className={`chat-row ${line.role}`} key={i}>
-            {line.role === 'teacher' && <img className="chat-avatar" src={tutor.avatar} alt={tutor.name} />}
-            <div className="chat-bubble"><Tex>{line.text}</Tex></div>
+    <div className="login-modal" onClick={close}>
+      <div className="login-card" onClick={(e) => e.stopPropagation()}>
+        <button className="login-close" type="button" onClick={close} aria-label="关闭">×</button>
+        <div className="login-brand">
+          <div className="logo-mark"><span className="lambda">λ</span></div>
+          <div>
+            <div className="login-title">登录 PhysicsPath</div>
+            <div className="login-tag">登录后开始你的解题陪练</div>
           </div>
-        ))}
-        {shown === 0 && <p className="chat-replay-hint">点「重播」开始</p>}
+        </div>
+
+        <div className="login-options">
+          <button className="login-option wechat" type="button" onClick={onLoginNew}>
+            <span className="login-icon">💬</span>
+            <div>
+              <strong>微信登录</strong>
+              <span>新用户首次使用 · 演示</span>
+            </div>
+          </button>
+          <button className="login-option phone" type="button" onClick={onLoginPaid}>
+            <span className="login-icon">📱</span>
+            <div>
+              <strong>手机号登录</strong>
+              <span>老用户回访 · 演示已购买身份</span>
+            </div>
+          </button>
+        </div>
+
+        <p className="login-disclaimer">
+          演示版本：点任意按钮均可登录，无需输入。<br />
+          上线后将接入微信开放平台 OAuth 与短信验证码。
+        </p>
       </div>
     </div>
   )
 }
 
-function Welcome({ go, openStory, openLibrary }: { go: (v: AppView) => void; openStory: () => void; openLibrary: () => void }) {
+// ---- 新用户首页占位（等 Claude Design 出完整设计后替换内容）
+// 简笔画头像 — 用于 NewUserHome 的 4 个老师占位 + spotlight 大头像
+type PortraitVariant = 'a' | 'b' | 'c' | 'd'
+function PortraitAvatar({ variant = 'a', className }: { variant?: PortraitVariant; className?: string }) {
+  const variants: Record<PortraitVariant, React.ReactElement> = {
+    a: (
+      <>
+        <rect width="36" height="36" fill="#EFE6D2" />
+        <path d="M8 30 Q 8 22 18 22 Q 28 22 28 30 Z" fill="#1F4034" />
+        <circle cx="18" cy="14" r="6.5" fill="#E8C39A" stroke="#1F4034" strokeWidth="1.2" />
+        <path d="M11.5 9 Q 18 4 24.5 9 L 24.5 12 Q 18 8 11.5 12 Z" fill="#1F4034" />
+        <rect x="13.5" y="13" width="3.5" height="3" rx="0.6" stroke="#1F4034" strokeWidth="1" fill="none" />
+        <rect x="19" y="13" width="3.5" height="3" rx="0.6" stroke="#1F4034" strokeWidth="1" fill="none" />
+        <line x1="17" y1="14.4" x2="19" y2="14.4" stroke="#1F4034" strokeWidth="1" />
+        <path d="M16 18.5 Q 18 19.5 20 18.5" stroke="#1F4034" strokeWidth="1" strokeLinecap="round" fill="none" />
+      </>
+    ),
+    b: (
+      <>
+        <rect width="36" height="36" fill="#E5DDC9" />
+        <path d="M7 30 Q 7 22 18 22 Q 29 22 29 30 Z" fill="#2F5749" />
+        <circle cx="18" cy="14" r="6.5" fill="#E8C39A" stroke="#1F4034" strokeWidth="1.2" />
+        <path d="M11.5 11 Q 13 6 18 6 Q 23 6 24.5 11 Q 22 7.5 18 8 Q 14 7.5 11.5 11 Z" fill="#1F4034" />
+        <circle cx="15.2" cy="14.5" r="1.8" stroke="#1F4034" strokeWidth="1" fill="none" />
+        <circle cx="20.8" cy="14.5" r="1.8" stroke="#1F4034" strokeWidth="1" fill="none" />
+        <line x1="17" y1="14.5" x2="19" y2="14.5" stroke="#1F4034" strokeWidth="1" />
+        <path d="M16.5 18.5 Q 18 19 19.5 18.5" stroke="#1F4034" strokeWidth="1" strokeLinecap="round" fill="none" />
+      </>
+    ),
+    c: (
+      <>
+        <rect width="36" height="36" fill="#F0E2C2" />
+        <path d="M7 30 Q 7 22 18 22 Q 29 22 29 30 Z" fill="#1F4034" />
+        <circle cx="18" cy="14" r="6.5" fill="#E8C39A" stroke="#1F4034" strokeWidth="1.2" />
+        <path d="M11.5 11 Q 12 5.5 18 5.5 Q 24 5.5 24.5 11 L 24 14 Q 23.5 11.5 23 11 Q 18 9 13 11 Q 12.5 11.5 12 14 Z" fill="#1F4034" />
+        <circle cx="15.5" cy="14.4" r="0.9" fill="#1F4034" />
+        <circle cx="20.5" cy="14.4" r="0.9" fill="#1F4034" />
+        <path d="M15 18.5 Q 18 20 21 18.5" stroke="#1F4034" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+        <path d="M14 19.8 Q 14.5 22 18 21.8 Q 21.5 22 22 19.8" stroke="#1F4034" strokeWidth="0.8" fill="none" opacity=".6" />
+      </>
+    ),
+    d: (
+      <>
+        <rect width="36" height="36" fill="#E8DECA" />
+        <path d="M7 30 Q 7 22 18 22 Q 29 22 29 30 Z" fill="#A86B3D" />
+        <circle cx="18" cy="14" r="6.5" fill="#E8C39A" stroke="#1F4034" strokeWidth="1.2" />
+        <path d="M11 13 Q 10 6 18 5 Q 26 6 25 13 Q 24 9 22 8.5 Q 23 11 22 12 Q 18 9 14 12 Q 13 11 14 8.5 Q 12 9 11 13 Z" fill="#1F4034" />
+        <circle cx="15.2" cy="14.6" r="1" fill="#1F4034" />
+        <circle cx="20.8" cy="14.6" r="1" fill="#1F4034" />
+        <path d="M16 18.5 Q 18 19.6 20 18.5" stroke="#A1342E" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+        <circle cx="11" cy="17" r="1.4" fill="#1F4034" opacity=".25" />
+        <circle cx="25" cy="17" r="1.4" fill="#1F4034" opacity=".25" />
+      </>
+    ),
+  }
+  return (
+    <svg className={className} viewBox="0 0 36 36" fill="none" preserveAspectRatio="xMidYMid slice">
+      {variants[variant]}
+    </svg>
+  )
+}
+
+function NewUserHome({ tutor, onTryFree, onBrowseTutors, onViewStory, onSubscribe }: {
+  tutor: Tutor
+  onTryFree: () => void
+  onBrowseTutors: () => void
+  onViewStory: () => void
+  onSubscribe: () => void
+}) {
+  const userName = '小宇'
+  const monthlyEquiv = Math.round(tutor.year / 12)
+  const savings = tutor.month * 12 - tutor.year
+
+  return (
+    <div className="new-user-home">
+      <header className="nuh-greet">
+        <div>
+          <h1>欢迎，<span className="name">{userName}</span></h1>
+          <p>从一道你不会的题开始 —— 我们带你看名师怎么想题。</p>
+        </div>
+        <div className="badge">还没订阅任何老师</div>
+      </header>
+
+      {/* 双 CTA */}
+      <div className="new-user-cta-grid">
+        <button type="button" className="new-user-cta primary" onClick={onTryFree}>
+          <div>
+            <span className="lead-tag">3 分钟体验</span>
+            <h2>拍一道不会的题<br />看看名师独家思路</h2>
+            <p>不用注册老师、不用充值。先和 AI 名师走一遍解题思路，看你是不是适合这种节奏。</p>
+          </div>
+          <div>
+            <span className="arrow">立即开始 <ArrowRight size={14} /></span>
+          </div>
+        </button>
+
+        <button type="button" className="new-user-cta secondary" onClick={onBrowseTutors}>
+          <div>
+            <h2>先看看有哪些名师分身</h2>
+            <p>4 位金牌名师分身正在内测。你可以先看他们的故事和试讲样片，再决定要不要试一道题。</p>
+          </div>
+          <div>
+            <div className="stack">
+              <span className="av"><PortraitAvatar variant="a" /></span>
+              <span className="av"><PortraitAvatar variant="b" /></span>
+              <span className="av"><PortraitAvatar variant="c" /></span>
+              <span className="av"><PortraitAvatar variant="d" /></span>
+              <span className="num">已上线 4 位 · 持续增加中</span>
+            </div>
+            <span className="arrow" style={{ marginTop: 14 }}>浏览名师档案 <ArrowRight size={14} /></span>
+          </div>
+        </button>
+      </div>
+
+      {/* 推荐老师 spotlight */}
+      <section className="new-user-spotlight">
+        <span className="section-eyebrow">本月推荐 · TEACHER OF THE MONTH</span>
+        <h2 className="section-title">{tutor.name}分身</h2>
+        <p className="section-sub">{tutor.schoolTag} · {tutor.specialties.slice(0, 2).join(' / ')} · 累计带过 200+ 学生</p>
+
+        <div className="spotlight-card">
+          <div className="av-large">
+            <PortraitAvatar variant="a" className="portrait" />
+            <span className="av-tag">在线陪练</span>
+          </div>
+          <div>
+            <div className="meta-line">
+              <span>北京 · 重点中学</span><span className="dot" />
+              <span>2008–至今</span><span className="dot" />
+              <span>专长：力学 · 电磁学</span>
+            </div>
+            <h3>不是搜答案，是把你脑子里的雾拨开。</h3>
+            <blockquote className="quote">
+              "我从不直接给你答案。物理题的解法只是一个壳，关键是壳里的那个想法 —— 你只要看见那个想法一次，你就再也不会忘。"
+            </blockquote>
+            <div className="row">
+              <button className="btn primary" type="button" onClick={onViewStory}>
+                看老师故事 <ArrowRight size={14} />
+              </button>
+              <button className="btn ghost" type="button" onClick={onTryFree}>
+                ▶ 试讲样片 · 3 分钟
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 信任三要素 */}
+      <section className="new-user-trust">
+        <div className="trust-item">
+          <div className="num">01 · 退款</div>
+          <h4>7 天无理由退款</h4>
+          <p>第一次订阅后 7 天内不满意，原路退回。不需要解释、不需要客服磨。</p>
+        </div>
+        <div className="trust-item">
+          <div className="num">02 · 名师</div>
+          <h4>每位老师都经过审核</h4>
+          <p>名师本人参与训练 AI 分身、亲自审稿。不是自动抓取的题库或网课内容。</p>
+        </div>
+        <div className="trust-item">
+          <div className="num">03 · 边界</div>
+          <h4>AI 不会直接给答案</h4>
+          <p>我们做的是教练，不是搜题工具。AI 引导你想，不替你想。这是产品底线。</p>
+        </div>
+      </section>
+
+      {/* 透明价格 */}
+      <section className="new-user-pricing">
+        <header className="pricing-head">
+          <div className="left">
+            <h3>价格清单</h3>
+            <p>不分等级、不限题数、不阶梯涨价。一个价钱，所有名师。</p>
+          </div>
+          <div className="refund">退款保证 · <b>7 天</b></div>
+        </header>
+        <div className="pricing-grid">
+          <button type="button" className="price-card" onClick={onSubscribe}>
+            <div className="label">月付</div>
+            <div className="num">
+              <span className="y">¥</span>
+              <span className="v">{tutor.month}</span>
+              <span className="unit">/ 月</span>
+            </div>
+            <div className="save">灵活订阅、随时取消</div>
+            <p className="footnote">第一次订阅享 7 天无理由退款。</p>
+          </button>
+          <button type="button" className="price-card recommended" onClick={onSubscribe}>
+            <div className="label">年付</div>
+            <div className="num">
+              <span className="y">¥</span>
+              <span className="v">{tutor.year}</span>
+              <span className="unit">/ 年</span>
+            </div>
+            <div className="save">折合每月 ¥{monthlyEquiv} · 省 ¥{savings}</div>
+            <p className="footnote">第一次订阅享 7 天无理由退款 · 一年陪练高考全程。</p>
+          </button>
+        </div>
+      </section>
+
+      {/* Why us */}
+      <section className="new-user-why-us">
+        <span className="section-eyebrow">为什么选我们</span>
+        <h2 className="section-title">和搜题 App、网课的区别</h2>
+        <div className="why-grid">
+          <div className="why-item">
+            <h4>搜题 App</h4>
+            <div className="compare">
+              <div className="col them"><span className="tag">Them</span>拍照 → 答案</div>
+              <div className="col us"><span className="tag">Us</span>拍照 → 一起想</div>
+            </div>
+          </div>
+          <div className="why-item">
+            <h4>录播网课</h4>
+            <div className="compare">
+              <div className="col them"><span className="tag">Them</span>老师讲、你听</div>
+              <div className="col us"><span className="tag">Us</span>老师问、你答</div>
+            </div>
+          </div>
+          <div className="why-item">
+            <h4>普通 AI 助手</h4>
+            <div className="compare">
+              <div className="col them"><span className="tag">Them</span>通用模型 · 给步骤</div>
+              <div className="col us"><span className="tag">Us</span>名师方法 · 给思路</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <footer className="new-user-footer">
+        <div>© 2026 PhysicsPath · 北京</div>
+        <div className="links">
+          <a href="#">用户协议</a>
+          <a href="#">隐私条款</a>
+          <a href="#">退款政策</a>
+          <a href="#">联系我们</a>
+        </div>
+      </footer>
+    </div>
+  )
+}
+
+const slideLabels = ['Hero · 1/4', '方法卡片 · 2/4', '试讲样片 · 3/4', '价格 · 4/4']
+
+function Welcome({ go, openStory, openLibrary, openLogin }: { go: (v: AppView) => void; openStory: () => void; openLibrary: () => void; openLogin: () => void }) {
   const [slide, setSlide] = useState(0)
   const [paused, setPaused] = useState(false)
   const trackRef = useRef<HTMLDivElement>(null)
+  const [firstVisit, setFirstVisit] = useState<boolean>(() => {
+    try { return !sessionStorage.getItem('carouselNudged') } catch { return false }
+  })
   const totalSlides = 4
 
   useEffect(() => {
     if (paused) return
     const id = window.setInterval(() => {
       setSlide((s) => (s + 1) % totalSlides)
-    }, 5000)
+    }, 10000)
     return () => window.clearInterval(id)
   }, [paused])
 
@@ -314,6 +560,11 @@ function Welcome({ go, openStory, openLibrary }: { go: (v: AppView) => void; ope
 
   const goPrev = () => setSlide((s) => (s - 1 + totalSlides) % totalSlides)
   const goNext = () => setSlide((s) => (s + 1) % totalSlides)
+
+  const handleNudgeEnd = () => {
+    setFirstVisit(false)
+    try { sessionStorage.setItem('carouselNudged', '1') } catch { /* noop */ }
+  }
 
   return (
     <main className="welcome-page carousel-mode">
@@ -328,7 +579,7 @@ function Welcome({ go, openStory, openLibrary }: { go: (v: AppView) => void; ope
         <nav className="welcome-nav-links">
           <button type="button" onClick={openStory}>名师档案</button>
           <button type="button" onClick={openLibrary}>方法卡库</button>
-          <button type="button" className="primary" onClick={() => go('student')}>立即试用</button>
+          <button type="button" className="primary" onClick={openLogin}>立即试用</button>
         </nav>
       </header>
 
@@ -340,7 +591,11 @@ function Welcome({ go, openStory, openLibrary }: { go: (v: AppView) => void; ope
         <button className="carousel-arrow prev" type="button" onClick={goPrev} aria-label="上一屏">‹</button>
         <button className="carousel-arrow next" type="button" onClick={goNext} aria-label="下一屏">›</button>
 
-        <div className="carousel-track" ref={trackRef}>
+        <div
+          className={`carousel-track ${firstVisit ? 'first-visit' : ''}`}
+          ref={trackRef}
+          onAnimationEnd={firstVisit ? handleNudgeEnd : undefined}
+        >
 
       <section className="carousel-slide welcome-hero">
         <div className="hero-inner">
@@ -349,7 +604,7 @@ function Welcome({ go, openStory, openLibrary }: { go: (v: AppView) => void; ope
             <h1>金牌名校名师<br /><span className="ai-accent">AI</span> 分身陪练</h1>
             <p className="lead">名师授权独家解题方法，把全国名师轻松请进家。</p>
             <div className="hero-ctas">
-              <button className="btn-primary" onClick={() => go('student')}>
+              <button className="btn-primary" onClick={openLogin}>
                 <CheckCircle2 size={14} /> 立即试一道高考真题
               </button>
               <button className="btn-ghost" onClick={() => go('teacher')}>
@@ -425,70 +680,106 @@ function Welcome({ go, openStory, openLibrary }: { go: (v: AppView) => void; ope
         </div>
       </section>
 
-      <section className="carousel-slide welcome-method">
-        <div className="slide-inner">
-        <p className="eyebrow">名师方法</p>
-        <h2>X 老师 32 年教龄沉淀的<br />解题路径，写进 AI</h2>
-        <p className="page-sub">每一类高考题型都有一张"方法卡"——AI 不是凭空回答，是按老师亲自审过的路径走。</p>
-        <div className="method-preview-grid">
-          <div className="method-preview-card">
-            <span className="eyebrow">力学</span>
-            <strong>斜面问题 3 秒识别法</strong>
-            <p>看到光滑斜面 + 物块就触发：分解重力 <Tex>{'$mg\\sin\\theta$'}</Tex> 与 <Tex>{'$mg\\cos\\theta$'}</Tex>，再列方程。</p>
+      <section className="carousel-slide slide-2 slide-stack">
+        <span className="stack-eyebrow">名师方法</span>
+        <h2 className="stack-title">X 老师 32 年教龄沉淀的<br />解题路径，写进 AI</h2>
+        <p className="stack-sub">
+          每一类高考题型都有一张「方法卡」——AI 不是凭空回答，是按老师亲自审过的路径走。
+        </p>
+        <div className="method-grid">
+          <div className="method-card">
+            <span className="tag">力学</span>
+            <h4>斜面问题 3 秒识别法</h4>
+            <p>看到光滑斜面 + 物块就触发：分解重力 <em>mg sinθ</em> 与 <em>mg cosθ</em>，再列方程。</p>
           </div>
-          <div className="method-preview-card">
-            <span className="eyebrow">电磁</span>
-            <strong>带电粒子磁场圆周·半径速算</strong>
-            <p>不背公式。先判定洛伦兹力提供向心力，半径 <Tex>{'$r = mv/(qB)$'}</Tex> 自然出来。</p>
+          <div className="method-card">
+            <span className="tag">电磁</span>
+            <h4>带电粒子磁场圆周·半径速算</h4>
+            <p>不背公式。先判定洛伦兹力提供向心力，半径 <em>r = mv/(qB)</em> 自然出来。</p>
           </div>
-          <div className="method-preview-card">
-            <span className="eyebrow">动量</span>
-            <strong>碰撞题先验三件事</strong>
+          <div className="method-card">
+            <span className="tag">动量</span>
+            <h4>碰撞题先验三件事</h4>
             <p>圈系统 → 看外力冲量是否可忽略 → 规定正方向。条件成立才列守恒方程。</p>
           </div>
         </div>
-        <button className="ghost" onClick={openLibrary}>查看完整方法卡库 →</button>
+        <div className="method-foot">
+          <button type="button" className="method-foot-link" onClick={openLibrary}>查看完整方法卡库 →</button>
         </div>
       </section>
 
-      <section className="carousel-slide welcome-replay">
-        <div className="slide-inner">
-        <p className="eyebrow">真实样片</p>
-        <h2>同样一道题，<br />X 老师是这么讲的</h2>
-        <p className="page-sub">点开听 30 秒——你会看到 AI 是怎么"按老师方法引导"，而不是直接吐答案的。</p>
-        <ChatReplay tutor={liuTutor} />
+      <section className="carousel-slide slide-3 slide-stack">
+        <span className="stack-eyebrow">真实样片</span>
+        <h2 className="stack-title">多年教学<br />独家方法</h2>
+        <p className="stack-sub">点开听 30 秒——你会看到 AI 是怎么「按老师方法引导」，而不是直接吐答案的。</p>
+        <div className="chat-card">
+          <div className="chat-head">
+            <span className="lbl">试讲片段 · 30 秒</span>
+            <span className="replay">▶ 重播</span>
+          </div>
+          <div className="chat-row you"><div className="bubble u">老师，光滑斜面上的物块沿斜面下滑，加速度怎么算？</div></div>
+          <div className="chat-row"><div className="av">师</div><div className="bubble t">别急。先做一件事：把重力沿斜面方向和垂直方向分解。沿斜面方向你写出来是什么？</div></div>
+          <div className="chat-row you"><div className="bubble u"><em>mg sinθ</em>？</div></div>
+          <div className="chat-row"><div className="av">师</div><div className="bubble t">对。光滑斜面没有摩擦，沿斜面方向的合力就是 <em>mg sinθ</em>。牛顿第二定律一列就出来：<em>a = g sinθ</em>。</div></div>
+          <div className="chat-row"><div className="av">师</div><div className="bubble t">记住这条路径——分解、列方程、解。下次见到斜面题，先想这三步，不要先翻公式。</div></div>
         </div>
       </section>
 
-      <section className="carousel-slide welcome-trust">
-        <div className="slide-inner">
-        <div className="trust-strip">
-          <div><ShieldCheck size={22} /><div><strong>不直接给答案</strong><span>AI 按老师方法一步步引导，避免抄袭。</span></div></div>
-          <div><ClipboardCheck size={22} /><div><strong>方法卡老师亲审</strong><span>每条讲题方法都要本人确认才会上线。</span></div></div>
-          <div><Mail size={22} /><div><strong>每周给家长摘要</strong><span>哪些卡点在退步，哪些在进步，一目了然。</span></div></div>
-          <div><UsersRound size={22} /><div><strong>真实老师参与</strong><span>不是凭空捏造的 AI，背后有名师收益分成。</span></div></div>
+      <section className="carousel-slide slide-4">
+        <div className="feat-row">
+          <div className="feat-cell">
+            <svg className="ic" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d="M9 1.5l6 2.5v4.5c0 4-3 6.5-6 7.5-3-1-6-3.5-6-7.5V4l6-2.5z" />
+            </svg>
+            <h5>不直接给答案</h5>
+            <p>AI 按老师方法一步步引导，避免抄袭。</p>
+          </div>
+          <div className="feat-cell">
+            <svg className="ic" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <rect x="3" y="2" width="12" height="14" rx="1.5" />
+              <path d="M6 6h6M6 9h6M6 12h4" />
+            </svg>
+            <h5>方法卡老师亲审</h5>
+            <p>每条讲题方法都要本人确认才会上线。</p>
+          </div>
+          <div className="feat-cell">
+            <svg className="ic" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <rect x="2" y="4" width="14" height="10" rx="1.5" />
+              <path d="M2 5l7 5 7-5" />
+            </svg>
+            <h5>每周给家长摘要</h5>
+            <p>哪些卡点在退步、哪些在进步，一目了然。</p>
+          </div>
+          <div className="feat-cell">
+            <svg className="ic" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <circle cx="6" cy="6" r="2.4" />
+              <circle cx="13" cy="7" r="1.8" />
+              <path d="M2 15c0-2.5 2-4 4-4s4 1.5 4 4M10 15c0-2 1.5-3 3-3s3 1 3 3" />
+            </svg>
+            <h5>真实老师参与</h5>
+            <p>不是凭空捏造的 AI，背后有名师收益分成。</p>
+          </div>
         </div>
-        <div className="welcome-cta-block">
-          <strong>¥299/月 · ¥2390/年（折合 ¥199/月）</strong>
-          <span>7 天无理由退款 · 家长账户支付</span>
-          <button onClick={() => go('student')}>立即试用 →</button>
-        </div>
+        <div className="price-pill">
+          <div className="num">¥299/月 · ¥2390/年（折合 ¥199/月）</div>
+          <div className="sub">7 天无理由退款 · 家长账户支付</div>
+          <button className="cta" type="button" onClick={openLogin}>立即试用 →</button>
         </div>
       </section>
 
         </div>
 
         <div className="carousel-dots" role="tablist">
-          {[0, 1, 2, 3].map((i) => (
+          {slideLabels.map((label, i) => (
             <button
               key={i}
               type="button"
               className={i === slide ? 'active' : ''}
               onClick={() => setSlide(i)}
-              aria-label={`第 ${i + 1} 屏`}
+              aria-label={label}
               role="tab"
               aria-selected={i === slide}
-            />
+            >{label}</button>
           ))}
         </div>
       </div>
@@ -641,14 +932,24 @@ function TutorStory({ tutor, back, buy }: { tutor: Tutor; back: () => void; buy:
     </main>
   )
 }
-function Settings({ close, setStudent, setApp, resetDemo }: { close: () => void; setStudent: (v: StudentView) => void; setApp: (v: AppView) => void; resetDemo: () => void }) {
+function Settings({ close, setStudent, resetDemo, switchToNew, switchToPaid, logout }: {
+  close: () => void
+  setStudent: (v: StudentView) => void
+  resetDemo: () => void
+  switchToNew: () => void
+  switchToPaid: () => void
+  logout: () => void
+}) {
   return (
     <div className="settings-modal" onClick={close}>
       <div className="settings-card" onClick={(e) => e.stopPropagation()}>
         <header><strong>设置</strong><button className="close" onClick={close}>关闭</button></header>
         <button onClick={() => { close(); setStudent('teachers') }}><GraduationCap size={14} /> 切换老师</button>
+        <div className="settings-section-title">演示模式</div>
+        <button onClick={() => { close(); switchToNew() }}><Eye size={14} /> 切换为新用户演示</button>
+        <button onClick={() => { close(); switchToPaid() }}><Eye size={14} /> 切换为老用户演示</button>
         <button onClick={() => { close(); resetDemo() }}><Flag size={14} /> 重置演示数据</button>
-        <button className="danger" onClick={() => { close(); setApp('welcome') }}><Flag size={14} /> 退出登录</button>
+        <button className="danger" onClick={() => { close(); logout() }}><Flag size={14} /> 退出登录</button>
       </div>
     </div>
   )
@@ -886,6 +1187,14 @@ function TeacherList({ list, setPreview, setView }: { list: Tutor[]; setPreview:
             disabled={!t.available}
             title={`${t.schoolTag} · ${t.years} · ${t.result}`}
           >
+            <span className="clone-badge">
+              <span className="seal"><SealSquare size={16} rotate={2} /></span>
+              <span className="v">v1.0</span>
+              <span className="dot" />
+              <span className={`signed ${!t.available ? 'signed--beta' : ''}`}>
+                {t.available ? '已签约' : '内测中'}
+              </span>
+            </span>
             <div className="portrait">
               <img src={t.avatar} alt={`${t.name} 头像`} />
             </div>
@@ -1335,13 +1644,36 @@ function Coach({ tutor, session, draft, setDraft, send, step, setStep, card, isT
 
       {/* 对话流 */}
       <div className="coach-thread">
-        {session.messages.map((m) => (
-          <div key={m.id} className={`coach-bubble ${m.role === 'teacher' ? 'ai' : 'user'}`}>
-            <Tex>{m.content}</Tex>
-          </div>
-        ))}
+        {session.messages.map((m) => {
+          if (m.role === 'student') {
+            return (
+              <div key={m.id} className="coach-bubble user">
+                <Tex>{m.content}</Tex>
+              </div>
+            )
+          }
+          return (
+            <div key={m.id} className="coach-bubble ai">
+              <span className="stamp-mark"><SealRound size={44} rotate={8} /></span>
+              <div className="signoff">
+                <span className="sig-name">{tutor.name} · 分身</span>
+                <span className="sig-tag">v1.2</span>
+              </div>
+              <div className="body"><Tex>{m.content}</Tex></div>
+              <div className="review">
+                <CheckCircle2 className="ico" size={14} />
+                <span><b className="by">{tutor.name}</b>方法卡引导</span>
+                <span className="when">{m.time}</span>
+              </div>
+            </div>
+          )
+        })}
         {isThinking && (
-          <div className="coach-bubble ai">
+          <div className="coach-bubble ai thinking">
+            <div className="signoff">
+              <span className="sig-name">{tutor.name} · 分身</span>
+              <span className="sig-tag">正在调取方法卡…</span>
+            </div>
             <span className="typing-bubble"><span /><span /><span /></span>
           </div>
         )}
@@ -1921,7 +2253,7 @@ function TeacherApp(props: TeacherProps) {
   return (
     <main className="app-shell teacher-site">
       <aside className="sidebar">
-        <div className="brand"><img className="brand-mark-img" src="/logo-mark.svg" alt="" /><div><strong>老师工作台</strong><span>训练我的 AI 分身</span></div></div>
+        <div className="brand"><div className="logo-mark"><span className="lambda">λ</span></div><div className="brand-lockup"><strong>老师工作台</strong><span>训练我的 AI 分身</span></div></div>
         <nav className="mode-nav" aria-label="教师端">
           {navItems.map(({ id, label, Icon }) => (
             <button className={view === id ? 'active' : ''} key={id} type="button" onClick={() => setView(id)}>
@@ -2122,7 +2454,27 @@ function App() {
   const [selectedSubject, setSelectedSubject] = useState('高中物理')
   const [selectedTutor, setSelectedTutor] = useState<Tutor>(defaultTutor)
   const [previewTutor, setPreviewTutor] = useState<Tutor>(defaultTutor)
-  const [purchasedIds, setPurchasedIds] = useState<string[]>([liuTutor.id])
+  // 用户身份：visitor=未登录, new=登录但未购买, paid=已购买
+  type UserTier = 'visitor' | 'new' | 'paid'
+  const [userTier, setUserTier] = useState<UserTier>(() => {
+    try {
+      const v = localStorage.getItem('physicspath:user-tier')
+      return (v === 'new' || v === 'paid' || v === 'visitor') ? v as UserTier : 'visitor'
+    } catch { return 'visitor' }
+  })
+  const [purchasedIds, setPurchasedIds] = useState<string[]>(() => {
+    try {
+      const v = localStorage.getItem('physicspath:purchased-ids')
+      return v ? (JSON.parse(v) as string[]) : []
+    } catch { return [] }
+  })
+  useEffect(() => {
+    localStorage.setItem('physicspath:user-tier', userTier)
+  }, [userTier])
+  useEffect(() => {
+    localStorage.setItem('physicspath:purchased-ids', JSON.stringify(purchasedIds))
+  }, [purchasedIds])
+  const [showLogin, setShowLogin] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [diagnosis, setDiagnosis] = useState<Diagnosis>(defaultDiagnosis)
   const [draft, setDraft] = useState('')
@@ -2268,12 +2620,44 @@ function App() {
     window.location.reload()
   }
 
+  const loginAsNew = () => {
+    setUserTier('new')
+    setPurchasedIds([])
+    setShowLogin(false)
+    setStudentView('newUserHome')
+    setAppView('student')
+  }
+  const loginAsPaid = () => {
+    setUserTier('paid')
+    setPurchasedIds([liuTutor.id])
+    setSelectedTutor({ ...liuTutor, purchased: true })
+    setShowLogin(false)
+    setStudentView('home')
+    setAppView('student')
+  }
+  const logout = () => {
+    setUserTier('visitor')
+    setPurchasedIds([])
+    setStudentView('home')
+    setAppView('welcome')
+  }
+
   if (appView === 'welcome') return (
-    <Welcome
-      go={setAppView}
-      openStory={() => { window.location.hash = '#/tutor/chang/story' }}
-      openLibrary={() => { window.location.hash = '#/methods' }}
-    />
+    <>
+      <Welcome
+        go={setAppView}
+        openStory={() => { window.location.hash = '#/tutor/chang/story' }}
+        openLibrary={() => { window.location.hash = '#/methods' }}
+        openLogin={() => setShowLogin(true)}
+      />
+      {showLogin && (
+        <LoginModal
+          close={() => setShowLogin(false)}
+          onLoginNew={loginAsNew}
+          onLoginPaid={loginAsPaid}
+        />
+      )}
+    </>
   )
   if (appView === 'teacher') {
     return (
@@ -2293,8 +2677,8 @@ function App() {
     <main className="app-shell student-site">
       <aside className="sidebar">
         <div className="brand">
-          <img className="brand-mark-img" src="/logo-mark.svg" alt="" />
-          <div>
+          <div className="logo-mark"><span className="lambda">λ</span></div>
+          <div className="brand-lockup">
             <strong>PhysicsPath</strong>
             <span>跟{selectedTutor.name}练{selectedTutor.subject.replace('高中', '')}</span>
           </div>
@@ -2305,22 +2689,24 @@ function App() {
         <div className="sidebar-section">
           <span className="section-title">学习</span>
           <button
-            className={`session-item ${studentView === 'home' ? 'active' : ''}`}
+            className={`session-item ${studentView === 'home' || studentView === 'newUserHome' ? 'active' : ''}`}
             type="button"
-            onClick={() => setStudentView('home')}
+            onClick={() => setStudentView(userTier === 'paid' ? 'home' : 'newUserHome')}
           >
             <Workflow size={14} /> <span>首页仪表盘</span>
           </button>
-          <button
-            className={`session-item ${studentView === 'mistakes' ? 'active' : ''}`}
-            type="button"
-            onClick={() => setStudentView('mistakes')}
-          >
-            <ClipboardCheck size={14} /> <span>错题本</span>
-            {mistakes.filter((m) => m.status !== 'mastered').length > 0 && (
-              <span className="badge">{mistakes.filter((m) => m.status !== 'mastered').length}</span>
-            )}
-          </button>
+          {userTier === 'paid' && (
+            <button
+              className={`session-item ${studentView === 'mistakes' ? 'active' : ''}`}
+              type="button"
+              onClick={() => setStudentView('mistakes')}
+            >
+              <ClipboardCheck size={14} /> <span>错题本</span>
+              {mistakes.filter((m) => m.status !== 'mastered').length > 0 && (
+                <span className="badge">{mistakes.filter((m) => m.status !== 'mastered').length}</span>
+              )}
+            </button>
+          )}
           <button
             className={`session-item ${studentView === 'methodLibrary' ? 'active' : ''}`}
             type="button"
@@ -2328,6 +2714,15 @@ function App() {
           >
             <Layers size={14} /> <span>方法卡库</span>
           </button>
+          {userTier === 'new' && (
+            <button
+              className="session-item upgrade-cta"
+              type="button"
+              onClick={() => setStudentView('teachers')}
+            >
+              <Sparkles size={14} /> <span>解锁全部功能</span>
+            </button>
+          )}
         </div>
         <div className="sidebar-section">
           <span className="section-title">最近会话</span>
@@ -2347,7 +2742,7 @@ function App() {
             <div className="user-avatar">小</div>
             <div>
               <strong>同学好</strong>
-              <span>已订阅{selectedTutor.name}</span>
+              <span>{userTier === 'paid' ? `已订阅${selectedTutor.name}` : '免费体验中'}</span>
             </div>
           </div>
           <button className="gear-button" type="button" onClick={() => setShowSettings(true)}>
@@ -2355,9 +2750,27 @@ function App() {
           </button>
         </div>
       </aside>
-      {showSettings && <Settings close={() => setShowSettings(false)} setStudent={setStudentView} setApp={setAppView} resetDemo={resetDemo} />}
+      {showSettings && (
+        <Settings
+          close={() => setShowSettings(false)}
+          setStudent={setStudentView}
+          resetDemo={resetDemo}
+          switchToNew={loginAsNew}
+          switchToPaid={loginAsPaid}
+          logout={logout}
+        />
+      )}
       <section className="workspace">
         {studentView === 'home' && <StudentHome tutor={selectedTutor} setView={setStudentView} />}
+        {studentView === 'newUserHome' && (
+          <NewUserHome
+            tutor={liuTutor}
+            onTryFree={() => setStudentView('capture')}
+            onBrowseTutors={() => setStudentView('teachers')}
+            onViewStory={() => { window.location.hash = '#/tutor/chang/story' }}
+            onSubscribe={() => { setPreviewTutor(liuTutor); setStudentView('teacherDetail') }}
+          />
+        )}
         {studentView === 'subjects' && <SubjectSelect selected={selectedSubject} setSelected={setSelectedSubject} setView={setStudentView} />}
         {studentView === 'teachers' && <TeacherList list={availableTutors} setPreview={setPreviewTutor} setView={setStudentView} />}
         {studentView === 'teacherDetail' && <TutorDetail tutor={previewTutor} back={() => setStudentView('teachers')} buy={() => { purchaseTutor(previewTutor); setSelectedTutor(previewTutor); setStudentView('home') }} enter={() => { setSelectedTutor(previewTutor); setStudentView('coach') }} />}

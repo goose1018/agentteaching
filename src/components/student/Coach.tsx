@@ -9,7 +9,7 @@ export interface CoachProps {
   session: Session
   draft: string
   setDraft: (s: string) => void
-  send: (s: string) => void
+  send: (displayText: string, llmText?: string) => void
   step: number
   setStep: (n: number) => void
   card: MethodCard
@@ -36,6 +36,21 @@ export function Coach({
   const safeStep = Math.min(step, card.methodSteps.length - 1)
   const current = card.methodSteps[safeStep]
   const isLastStep = safeStep >= card.methodSteps.length - 1
+  const buildActionPrompt = (intent: 'hint' | 'next' | 'solution', targetStep = current) => {
+    const instruction = {
+      hint: `学生点了「提示一下」。请只围绕当前第 ${safeStep + 1} 步「${targetStep}」给一个启发式提示，不要给完整答案。最后反问学生一个具体判断问题。`,
+      next: `学生已经准备进入下一步。请围绕第 ${safeStep + 2} 步「${targetStep}」说明这一小步要判断什么，不要重复上一轮，不要给完整答案。最后让学生先尝试写出这一小步。`,
+      solution: `学生要求看完整解析。请给分步解析，但仍保持老师口吻：先列路径，再给关键方程；公式必须用 $...$ 包裹；不要泛泛而谈。`,
+    }[intent]
+    return [
+      instruction,
+      `题目：${diagnosis.text}`,
+      `命中方法卡：${card.topic}`,
+      `方法路径：${card.methodSteps.join(' → ')}`,
+      `当前步骤：${targetStep}`,
+      `常见错误：${card.commonError}`,
+    ].join('\n')
+  }
 
   return (
     <div className="coach-shell">
@@ -72,7 +87,7 @@ export function Coach({
           <button
             className="ghost"
             type="button"
-            onClick={() => send('给我一个提示')}
+            onClick={() => send('提示一下', buildActionPrompt('hint'))}
             disabled={isThinking}
           >
             <Lightbulb size={14} /> 提示一下
@@ -83,7 +98,7 @@ export function Coach({
             onClick={() => {
               const nextStep = Math.min(safeStep + 1, card.methodSteps.length - 1)
               setStep(nextStep)
-              send('好，下一步我该做什么？')
+              send('好，下一步我该做什么？', buildActionPrompt('next', card.methodSteps[nextStep]))
             }}
             disabled={isLastStep || isThinking}
           >
@@ -92,7 +107,7 @@ export function Coach({
           <button
             className="ghost"
             type="button"
-            onClick={() => send('给我看一下完整解题过程')}
+            onClick={() => send('看完整解析', buildActionPrompt('solution'))}
             disabled={isThinking}
           >
             <BookOpen size={14} /> 看完整解析

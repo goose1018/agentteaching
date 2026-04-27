@@ -71,14 +71,18 @@ export async function generateAnswerWithProvider({
       choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>
     }
 
-    const raw = data.choices?.[0]?.message?.content ?? ''
+    const message = data.choices?.[0]?.message
+    const raw = message?.content ?? ''
+    const reasoningFallback = message?.reasoning_content?.trim() ?? ''
     const parsed = parseTeacherJson(raw)
 
     // 兜底：LLM 返回 content 真为空时，重新开个新提问
     const content = parsed.content?.trim()
     const safeAnswer = content && content.length > 0
       ? cleanupLatex(content)
-      : `我这次没组织好回答。你再发一次，或者换个问法，我会继续按这道题的方法卡带你走。`
+      : reasoningFallback
+        ? cleanupLatex(`我先按思路接住这一步：${reasoningFallback.slice(0, 220)}。那你能先判断当前步骤应该看哪个物理量吗？`)
+        : `我这次没组织好回答。你再发一次，或者换个问法，我会继续按这道题的方法卡带你走。`
 
     return {
       provider: 'deepseek',
@@ -127,14 +131,20 @@ function cleanupLatex(text: string): string {
 }
 
 function parseTeacherJson(raw: string): TeacherJson {
+  if (!raw.trim()) return { content: '', evaluation: null }
   try {
     const cleaned = raw
       .trim()
       .replace(/^```(?:json)?\s*/i, '')
       .replace(/\s*```$/i, '')
+    const start = cleaned.indexOf('{')
+    const end = cleaned.lastIndexOf('}')
     const jsonText = cleaned.startsWith('{')
       ? cleaned
-      : cleaned.slice(cleaned.indexOf('{'), cleaned.lastIndexOf('}') + 1)
+      : start >= 0 && end > start
+        ? cleaned.slice(start, end + 1)
+        : ''
+    if (!jsonText) return { content: cleaned, evaluation: null }
     const obj = JSON.parse(jsonText) as { content?: string; evaluation?: string }
     const evaluation = (['correct', 'partial', 'wrong'].includes(obj.evaluation ?? '')
       ? obj.evaluation

@@ -217,34 +217,37 @@ function App() {
     setStudentView('capture')
   }
 
-  const sendQuestion = async (question: string) => {
+  const sendQuestion = async (question: string, llmQuestion?: string) => {
     const text = question.trim()
     if (!text) return
     const studentMessage: Message = { id: crypto.randomUUID(), role: 'student', content: text, time: fmt() }
     setMessages((current) => [...current, studentMessage])
     setDraft('')
     setIsThinking(true)
-    // 本题的方法卡只由题干决定。后续「提示一下 / 下一步」这类短按钮文案不能重新匹配，
-    // 否则会 fallback 到第一张卡，造成电场题按牛二讲。
-    const card = findMethodCard(diagnosis.text, cards)
-    const history = (activeSession?.messages ?? []).slice(-6).map((m) => ({
-      role: (m.role === 'teacher' ? 'teacher' : 'student') as 'teacher' | 'student',
-      content: m.content,
-    }))
-    const result = await getAiClient().generateAnswer({
-      question: text,
-      methodCard: card,
-      problemText: diagnosis.text,
-      history,
-    })
-    setAnswerReviews((current) => [createAnswerReview(text, result.answer, card), ...current].slice(0, 50))
-    // 优先用真 LLM 输出的 evaluation；mock fallback 时退化到本地关键词匹配
-    const evaluation = result.evaluation ?? mockEvaluateAnswer(text, card)
-    setMessages((current) => [
-      ...current,
-      { id: crypto.randomUUID(), role: 'teacher', content: result.answer, time: fmt(), tags: [card.topic], evaluation },
-    ])
-    setIsThinking(false)
+    try {
+      // 本题的方法卡只由题干决定。后续「提示一下 / 下一步」这类短按钮文案不能重新匹配，
+      // 否则会 fallback 到第一张卡，造成电场题按牛二讲。
+      const card = findMethodCard(diagnosis.text, cards)
+      const history = (activeSession?.messages ?? []).slice(-6).map((m) => ({
+        role: (m.role === 'teacher' ? 'teacher' : 'student') as 'teacher' | 'student',
+        content: m.content,
+      }))
+      const result = await getAiClient().generateAnswer({
+        question: llmQuestion?.trim() || text,
+        methodCard: card,
+        problemText: diagnosis.text,
+        history,
+      })
+      setAnswerReviews((current) => [createAnswerReview(text, result.answer, card), ...current].slice(0, 50))
+      // 优先用真 LLM 输出的 evaluation；mock fallback 时退化到本地关键词匹配
+      const evaluation = result.evaluation ?? mockEvaluateAnswer(text, card)
+      setMessages((current) => [
+        ...current,
+        { id: crypto.randomUUID(), role: 'teacher', content: result.answer, time: fmt(), tags: [card.topic], evaluation },
+      ])
+    } finally {
+      setIsThinking(false)
+    }
   }
 
   // 假支付：弹成功 modal，确认后升级为 paid 用户并跳 home

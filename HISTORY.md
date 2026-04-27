@@ -262,6 +262,11 @@ LoginModal
    - 根因：API 只读 `message.content`，且空 content 兜底文案带 `debug: raw=""`；同时清洗逻辑对 `{1}{2}mv^2`、`cdot`、代码块 JSON 等格式不够稳。
    - 修复：空内容改成用户可读兜底，不再显示 debug；JSON 解析支持 ```json fence；LaTeX cleanup 增强 `{1}{2}`、`frac{1}{2}`、`cdot`、裸 `\frac / \sqrt / \sin` 等常见格式。
 
+6. **二次修正：按钮 prompt 过短导致复读/空答**
+   - 现象：即使 methodCard 固定后，按钮仍把「提示一下」「好，下一步我该做什么？」这种短文本直接交给 LLM，模型容易复读、泛答或输出空 content。
+   - 修复：Coach 的按钮现在采用“双文本”策略：UI 里仍显示短句，但传给 LLM 的是结构化指令，包含题目、命中方法卡、完整方法路径、当前步骤、常见错误和按钮意图（hint / next / solution）。
+   - 额外防护：`sendQuestion()` 增加 `try/finally`，防止 proxy/LLM 异常后 `isThinking` 永远卡住；DeepSeek content 为空时会尝试用 `reasoning_content` 生成可读兜底，不再把内部 debug 暴露给学生。
+
 验证：本次修复后已跑 `npm run lint` 和 `npm run build`，均通过。Build 仍有大 chunk warning，属于后续代码分割/懒加载优化项，不阻塞演示。
 
 ---
